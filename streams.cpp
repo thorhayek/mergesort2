@@ -457,19 +457,19 @@ IStreamMmap::~IStreamMmap(){
 
 // Buffered Write 
 //default constructor 
-OStreamWriteBuf::OStreamWriteBuf(){
+OStreamMmap::OStreamMmap(){
 	buf = new int[1] ; 
 	b_size  = 1 ;
 	elements_written = 0 ; 
 
 }
-OStreamWriteBuf::OStreamWriteBuf(int buffer_size){
+OStreamMmap::OStreamMmap(int buffer_size){
 	buf = new int[buffer_size];
 	b_size = buffer_size ; 
 	elements_written = 0 ; 
 
 }
-int OStreamWriteBuf::create(std::string & filename){
+int OStreamMmap::create(std::string & filename){
 
 	// set read and write right for other users creat already sets write ,append trunc flags	
 	write_fd = creat(filename.c_str(),S_IRWXG|S_IRWXU);//user and group have read write exec permisson
@@ -480,7 +480,7 @@ int OStreamWriteBuf::create(std::string & filename){
 	
 
 }
-int OStreamWriteBuf::writes(int element){
+int OStreamMmap::writes(int element){
 
 	// check if buffer is full 
 	// then write them to the buffer 
@@ -498,7 +498,7 @@ int OStreamWriteBuf::writes(int element){
 	}
 	return 0 ; // return 0 means either written to buffer or to write
 }
-int OStreamWriteBuf::closes(){
+int OStreamMmap::closes(){
 
 	// make sure buffer elements are written if buffer is non-empty 
 	if(elements_written > 0 ){
@@ -513,6 +513,6 @@ int OStreamWriteBuf::closes(){
 
 }
 
-OStreamWriteBuf::~OStreamWriteBuf(){
+OStreamMmap::~OStreamMmap(){
 	delete [] buf ; 
 }
