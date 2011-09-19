@@ -342,3 +342,177 @@ int OStreamFWrite::closes(){
 OStreamFWrite::~OStreamFWrite(){
 	delete [] buf ; 
 }
+
+// BUFFERED READ AND WRITE with mmap and munmap
+//default 
+IStreamMmap::IStreamMmap(){
+	//buf = new int[1];
+	buf = (char *)-1;
+	elements_read = 1 ;
+	b_size = 1 ; 
+	file_end_flag = false ; 
+	pagesize = getpagesize();
+	offset = (-1)*b_size;
+
+} 
+IStreamMmap::IStreamMmap(int buffer_size){
+	//buf = new int[buffer_size] ; 
+	buf = (char *)-1;
+	b_size = buffer_size ;  
+	// initialize the elements read to 
+	elements_read = b_size ; // ensures that firt time we use read call
+	file_end_flag = false ;  
+	pagesize = getpagesize();
+	offset = (-1)*b_size;
+
+}
+int IStreamMmap::opens(std::string & filename){
+
+	offset = 0;
+	pagesize = getpagesize();
+	// connect the IStream_one obj with a file 
+	read_fd = open(filename.c_str(),O_RDONLY ) ;  
+	if(read_fd < 0 ){
+		 return -1 ;  
+	}
+	//extract file length
+	struct stat statbuf;
+	stat(filename, &sbuf); //TODO check for error in the function call
+	filelength = sbuf.st_size;
+
+	return 0 ;// on success 
+	// handle error 	
+
+}
+int IStreamMmap::read_next(){
+
+	int ret_code  ; 	
+	int element=-2; 
+	if(elements_read == b_size){
+		//munmap previous mapping, if any
+		if (buf != (char *)-1) {
+			munmap(buf, b_size);
+		}
+		//increment offset to next b_size location in the file
+		offset +=b_size;
+		if(offset < filelength) { // we can do mapping
+			buf = mmap((char *)0, b_size, PROT_READ, MAP_SHARED, read_fd, offset);
+			//Error checking
+			if(buf == (char *)-1) {
+				cout << "MMAP read_next()::mmap error"<<endl;
+			}
+		}
+		else {
+			//XXX we can do this in destructor as well
+			file_end_flag = true ;
+			//munmap previous mapping, if any
+			if (buf != (char *)-1) {
+				munmap(buf, b_size);
+			}
+			return element;  //return -2
+		}
+
+		elements_read = 0 ;
+		// read the element 
+		element = buf[elements_read] ;// 0th element 
+		elements_read++ ;
+		
+	}
+	else{
+		// read next element from buffer 
+		if((elements_read*sizeof(int) + offset) < filelength) {
+			element = buf[elements_read] ; 
+			// update elements read 
+			elements_read++ ;
+		}
+		else {
+			file_end_flag = true;
+		}
+	}
+	return element ; 
+}
+bool IStreamMmap::end_of_stream(){
+
+	if(file_end_flag == true){
+		// case where a buffer read did not fill the buffer
+		return true ; 
+	}
+	else if((elements_read*sizeof(int) + offset) > filelength) {
+		file_end_flag == true;
+		return true;
+	}
+	else {
+		return false;
+	}
+}
+
+IStreamMmap::~IStreamMmap(){
+	//munmap previous mapping, if any
+	if (buf != (char *)-1) {
+		munmap(buf, b_size);
+	}
+
+	close(read_fd); //check return value ? 
+}
+
+// Buffered Write 
+//default constructor 
+OStreamWriteBuf::OStreamWriteBuf(){
+	buf = new int[1] ; 
+	b_size  = 1 ;
+	elements_written = 0 ; 
+
+}
+OStreamWriteBuf::OStreamWriteBuf(int buffer_size){
+	buf = new int[buffer_size];
+	b_size = buffer_size ; 
+	elements_written = 0 ; 
+
+}
+int OStreamWriteBuf::create(std::string & filename){
+
+	// set read and write right for other users creat already sets write ,append trunc flags	
+	write_fd = creat(filename.c_str(),S_IRWXG|S_IRWXU);//user and group have read write exec permisson
+	if(write_fd  < 0 ){
+		return -1 ; 
+	}
+	return 0 ; // for success 
+	
+
+}
+int OStreamWriteBuf::writes(int element){
+
+	// check if buffer is full 
+	// then write them to the buffer 
+	buf[elements_written]  = element ;
+	elements_written++ ;
+	if(elements_written == b_size){
+		// write to file
+		std::cout << "writing to buf " <<element <<  std::endl ;
+		int ret_code = write(write_fd,buf,b_size*sizeof(int)) ;
+		
+		if(ret_code <= 0 ){
+			return -1 ; 
+		}
+		elements_written = 0 ; 
+	}
+	return 0 ; // return 0 means either written to buffer or to write
+}
+int OStreamWriteBuf::closes(){
+
+	// make sure buffer elements are written if buffer is non-empty 
+	if(elements_written > 0 ){
+		int ret = write(write_fd,buf,elements_written*sizeof(int));
+		if(ret <= 0 ){
+			return -1 ;
+		}
+		elements_written = 0 ; // does not matter though 
+	}
+	int ret_code = close(write_fd);
+	return ret_code ; 
+
+}
+
+OStreamWriteBuf::~OStreamWriteBuf(){
+	delete [] buf ; 
+}

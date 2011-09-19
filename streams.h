@@ -66,7 +66,8 @@ class OStreamWrite : public BaseOStream{
 // uses read with buf B  
 class IStreamReadBuf :public BaseIStream{
 	private : 
-		int read_fd ; // have to redefine here as inhertiance does not include private read_fd
+		//XXX Shantha: you can make read_fd a protected member in BaseIStream
+		int read_fd ; // have to redefine here as inhertiance does not include private read_f
 	 	int   *buf ; // will be initialized by constructor we need this to be persistent during diff calls 
 		int elements_read ; 
 		int b_size ; // we have to keep track  of size ??  // no of elements in buffer
@@ -146,8 +147,13 @@ class OStreamFWrite : public BaseOStream{
 class IStreamMmap : public BaseIStream{
 	private:
 		int read_fd ; 
-		int pagesize ;
-		int buffer_pages ; // determines how many pages our buffer has so buffer_size = buffer_pages * pagesize  
+		int *buf;
+		int elements_read;
+		int b_size;
+		bool file_end_flag;
+		int offset;	//Current offset from which to start reading from file. It is aligned with virtual page size
+		int pagesize; //page size of the operating system
+		int filelength; //length of the file being opened
 
 	public :
 		// default constructor 
@@ -162,11 +168,16 @@ class IStreamMmap : public BaseIStream{
 class OStreamMmap : public BaseOStream{
 
 	private: 
-		int fd ; 
 		// add other stuff
+		int write_fd ; // have to redefine here as inhertiance does not include private read_fd
+		int *buf ;
+		int b_size ;  // no if elements the buffer can hold 
+		int elements_written ;  // no of elements already written 
+
 	public:
-		// TODO constructor
-		
+		//default construct 
+		OStreamMmap(); // creates buffer of size 1 
+		OStreamMmap(int buffer_size); 		
 		virtual int read_next();
 		virtual int opens(std::string &filename);
 		virtual bool end_of_stream();
