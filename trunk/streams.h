@@ -152,7 +152,7 @@ class IStreamMmap : public BaseIStream{
 		int b_size;
 		bool file_end_flag;
 		int offset;	//Current offset from which to start reading from file. It is aligned with virtual page size
-		int pagesize; //page size of the operating system  reqd ?? 
+		//int pagesize; //page size of the operating system  reqd ?? 
 		int filelength; //length of the file being opened
 
 	public :
