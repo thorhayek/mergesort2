@@ -347,28 +347,28 @@ OStreamFWrite::~OStreamFWrite(){
 //default 
 IStreamMmap::IStreamMmap(){
 	//buf = new int[1];
-	buf = (char *)-1; // will be alloted space by mmap 
+	buf = (int *)-1; // will be alloted space by mmap 
 	elements_read = 1 ;
 	b_size = 1 ; 
 	file_end_flag = false ; 
-	pagesize = getpagesize();
+	//pagesize = getpagesize();
 	offset = (-1)*b_size;
 
 } 
 IStreamMmap::IStreamMmap(int buffer_size){
 	//buf = new int[buffer_size] ; 
-	buf = (char *)-1;
+	buf = (int *)-1;
 	b_size = buffer_size ;  
 	// initialize the elements read to 
 	elements_read = b_size ; // ensures that firt time we use read call
 	file_end_flag = false ;  
-	pagesize = getpagesize();
+	//pagesize = getpagesize();
 	offset = (-1)*b_size;
 
 }
 int IStreamMmap::opens(std::string & filename){
 
-	offset = 0;
+	//offset = 0; // ??? WRONG 
 	pagesize = getpagesize(); // are we using this ?
 	// connect the IStream_one obj with a file 
 	read_fd = open(filename.c_str(),O_RDONLY ) ;  
@@ -388,18 +388,18 @@ int IStreamMmap::read_next(){
 
 	int ret_code  ; 	
 	int element=-2; 
-	if(elements_read == b_size){
+	if(elements_read*sizeof(int) == b_size){
 		//munmap previous mapping, if any
-		if (buf != (char *)-1) {
+		if (buf != (int *)-1) {
 			// TODO check return value  
 			munmap(buf, b_size);
 		}
 		//increment offset to next b_size location in the file
 		offset +=b_size;
 		if(offset < filelength) { // we can do mapping
-			buf = mmap((char *)0, b_size, PROT_READ, MAP_SHARED, read_fd, offset);
+			buf =(int *) mmap((char *)0, b_size, PROT_READ, MAP_SHARED, read_fd, offset);
 			//Error checking
-			if(buf == (char *)-1) {
+			if(buf == (int *)-1) {
 				cout << "MMAP read_next()::mmap error"<<endl;
 			}
 		}
@@ -407,7 +407,7 @@ int IStreamMmap::read_next(){
 			//XXX we can do this in destructor as well
 			file_end_flag = true ;
 			//munmap previous mapping, if any
-			if (buf != (char *)-1) {
+			if (buf != (int *)-1) {
 				munmap(buf, b_size);
 			}
 			return element;  //return -2
@@ -480,7 +480,7 @@ OStreamMmap::OStreamMmap(int buffer_size){
 int OStreamMmap::create(std::string & filename){
 	// creates a file of 0 bytes 
 	// set read and write right for other users creat already sets write ,append trunc flags	
-	write_fd = open("one_mmap.bin", O_RDWR|O_CREAT|O_TRUNC, 0666) ; // we NEED both read and write permissions here 
+	write_fd = open(filename, O_RDWR|O_CREAT|O_TRUNC, 0666) ; // we NEED both read and write permissions here 
 	//write_fd = creat(filename.c_str(),S_IRWXG|S_IRWXU);//user and group have read write exec permisson
 	if(write_fd  < 0 ){
 		return -1 ; 
