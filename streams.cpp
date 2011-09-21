@@ -376,9 +376,9 @@ int IStreamMmap::opens(std::string & filename){
 		 return -1 ;  
 	}
 	//extract file length
-	struct stat statbuf;
+	struct stat sbuf; // changed by vishay
 	stat(filename, &sbuf); //TODO check for error in the function call
-	filelength = sbuf.st_size;
+	filelength = sbuf.st_size; 
 
 	return 0 ;// on success 
 	// handle error 	
@@ -449,7 +449,7 @@ bool IStreamMmap::end_of_stream(){
 
 IStreamMmap::~IStreamMmap(){
 	//munmap previous mapping, if any
-	if (buf != (char *)-1) {
+	if (buf != (int *)-1) {
 		munmap(buf, b_size);
 	}
 
@@ -460,25 +460,28 @@ IStreamMmap::~IStreamMmap(){
 //default constructor 
 OStreamMmap::OStreamMmap(){
 
-	buf = (char *)-1 ; 
+	buf = (int *)-1 ; 
 	b_size  = 1 ; 
 	elements_written = 0 ;
-	offset = (-1)*b_size; 
+	//offset = (-1)*b_size; 
+	offset = 0 ; 
 		
 
 }
 OStreamMmap::OStreamMmap(int buffer_size){
 	// we are assuming that the buffersize is a multiple of pagesize and pagesize is a multiple of integer size  
-	buf = (char *) -1 ; // initlize using some invalid memory location .. will be assigned memory by mmap 
+	buf = (int *) -1 ; // initlize using some invalid memory location .. will be assigned memory by mmap 
 	b_size = buffer_size ; 
 	elements_written = 0 ;
-	offset = (-1)*b_size ; 
+	//offset = (-1)*b_size ; 
+	offset = 0 ; 
 
 }
 int OStreamMmap::create(std::string & filename){
 	// creates a file of 0 bytes 
 	// set read and write right for other users creat already sets write ,append trunc flags	
-	write_fd = creat(filename.c_str(),S_IRWXG|S_IRWXU);//user and group have read write exec permisson
+	write_fd = open("one_mmap.bin", O_RDWR|O_CREAT|O_TRUNC, 0666) ; // we NEED both read and write permissions here 
+	//write_fd = creat(filename.c_str(),S_IRWXG|S_IRWXU);//user and group have read write exec permisson
 	if(write_fd  < 0 ){
 		return -1 ; 
 	}
@@ -490,15 +493,16 @@ int OStreamMmap::writes(int element){
 	int ret_code ;
 	// check if buffer is full 
 	// then write them to the buffer
-	if(buf == (char *)-1){
+	if(buf == (int *)-1){
 		// FIRST TIME 
 		// first do an lseek to increase the size  of the file by buffer_size  
 		ret_code = lseek(write_fd,b_size -1 ,SEEK_END);
-		if (ret_code == -1 ){
+		write(write_fd,'\0',1); // necessary step 
+		if (ret_code == -1){
 			// error while lseeking 
 			return -1 ; 
 		}
-		buf = (int *)mmap((char *)0, b_size, PROT_WRITE, MAP_SHARED, write_fd, offset);// should we use MAP_PRIVATE instead
+		buf = (int *)mmap(0, b_size, PROT_WRITE, MAP_SHARED, write_fd, offset);// should we use MAP_PRIVATE instead
 		if(buf == (int *)-1){ // should be int* instead of char * or void * 
 			return -1 ;
 		}
@@ -517,19 +521,21 @@ int OStreamMmap::writes(int element){
 		if(elements_written*sizeof(int) == b_size){ // this will match sometime as pagesize mutiple of int 
 		{
 			// unmap file 
-			ret_code = unmap(buf,b_size);
+			ret_code = munmap(buf,b_size);
 			if (ret_code == -1 ){
 				// error while unmapping 
 				return -1 ; 
 			}
+			// create NEW Mapping 
 			// lseek 
 			ret_code = lseek(write_fd,b_size -1,SEEK_END );
+			write(write_fd,'\0',1); // this will actually incerase the size 
 			if (ret_code == -1 ){
 			// error while lseeking 
 				return -1 ; 
 			}
 			// map after offset bytes
-			buf = (int *)mmap((char *)0, b_size, PROT_WRITE, MAP_SHARED, write_fd, offset);// should we use MAP_PRIVATE instead
+			buf = (int *)mmap(0, b_size, PROT_WRITE, MAP_SHARED, write_fd, offset);// should we use MAP_PRIVATE instead
 			if(buf == (int *)-1){ // should be int* instead of char * or void * 
 				return -1 ;
 			}
