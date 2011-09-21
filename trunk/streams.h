@@ -152,15 +152,17 @@ class IStreamMmap : public BaseIStream{
 		int b_size;
 		bool file_end_flag;
 		int offset;	//Current offset from which to start reading from file. It is aligned with virtual page size
-		int pagesize; //page size of the operating system
+		int pagesize; //page size of the operating system  reqd ?? 
 		int filelength; //length of the file being opened
 
 	public :
 		// default constructor 
 		IStreamMmap() ; // initalizes page size 
+		IStreamMmap(int buffer_size) ; // initalizes page size 
 		virtual int read_next() ; // will return the next int 
 		virtual int opens(std::string & filename)  ; //  assign value to fd 
 		virtual bool end_of_stream() ;
+		~IStreamMmap() ; // this does not have to be virtual 
 
 };
 
@@ -169,19 +171,21 @@ class OStreamMmap : public BaseOStream{
 
 	private: 
 		// add other stuff
-		int write_fd ; // have to redefine here as inhertiance does not include private read_fd
+		int write_fd ; 
 		int *buf ;
 		int b_size ;  // no if elements the buffer can hold 
-		int elements_written ;  // no of elements already written 
+		int elements_written ;  // no of elements already written
+		int offset ;  
 
 	public:
 		//default construct 
 		OStreamMmap(); // creates buffer of size 1 
 		OStreamMmap(int buffer_size); 		
-		virtual int read_next();
-		virtual int opens(std::string &filename);
-		virtual bool end_of_stream();
+		virtual int create(std::string &filename);
+		virtual int writes(int n);
+		virtual bool closes();
 		// TODO destructor 
+		~OStreamMmap() ;
 		
 };
 
