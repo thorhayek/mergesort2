@@ -347,7 +347,7 @@ OStreamFWrite::~OStreamFWrite(){
 //default 
 IStreamMmap::IStreamMmap(){
 	//buf = new int[1];
-	buf = (char *)-1;
+	buf = (char *)-1; // will be alloted space by mmap 
 	elements_read = 1 ;
 	b_size = 1 ; 
 	file_end_flag = false ; 
@@ -369,7 +369,7 @@ IStreamMmap::IStreamMmap(int buffer_size){
 int IStreamMmap::opens(std::string & filename){
 
 	offset = 0;
-	pagesize = getpagesize();
+	pagesize = getpagesize(); // are we using this ?
 	// connect the IStream_one obj with a file 
 	read_fd = open(filename.c_str(),O_RDONLY ) ;  
 	if(read_fd < 0 ){
@@ -391,6 +391,7 @@ int IStreamMmap::read_next(){
 	if(elements_read == b_size){
 		//munmap previous mapping, if any
 		if (buf != (char *)-1) {
+			// TODO check return value  
 			munmap(buf, b_size);
 		}
 		//increment offset to next b_size location in the file
@@ -458,33 +459,88 @@ IStreamMmap::~IStreamMmap(){
 // Buffered Write 
 //default constructor 
 OStreamMmap::OStreamMmap(){
-	buf = new int[1] ; 
-	b_size  = 1 ;
-	elements_written = 0 ; 
+
+	buf = (char *)-1 ; 
+	b_size  = 1 ; 
+	elements_written = 0 ;
+	offset = (-1)*b_size; 
+		
 
 }
 OStreamMmap::OStreamMmap(int buffer_size){
-	buf = new int[buffer_size];
+	// we are assuming that the buffersize is a multiple of pagesize and pagesize is a multiple of integer size  
+	buf = (char *) -1 ; // initlize using some invalid memory location .. will be assigned memory by mmap 
 	b_size = buffer_size ; 
-	elements_written = 0 ; 
+	elements_written = 0 ;
+	offset = (-1)*b_size ; 
 
 }
 int OStreamMmap::create(std::string & filename){
-
+	// creates a file of 0 bytes 
 	// set read and write right for other users creat already sets write ,append trunc flags	
 	write_fd = creat(filename.c_str(),S_IRWXG|S_IRWXU);//user and group have read write exec permisson
 	if(write_fd  < 0 ){
 		return -1 ; 
 	}
 	return 0 ; // for success 
-	
 
 }
 int OStreamMmap::writes(int element){
 
+	int ret_code ;
 	// check if buffer is full 
-	// then write them to the buffer 
-	buf[elements_written]  = element ;
+	// then write them to the buffer
+	if(buf == (char *)-1){
+		// FIRST TIME 
+		// first do an lseek to increase the size  of the file by buffer_size  
+		ret_code = lseek(write_fd,b_size -1 ,SEEK_END);
+		if (ret_code == -1 ){
+			// error while lseeking 
+			return -1 ; 
+		}
+		buf = (int *)mmap((char *)0, b_size, PROT_WRITE, MAP_SHARED, write_fd, offset);// should we use MAP_PRIVATE instead
+		if(buf == (int *)-1){ // should be int* instead of char * or void * 
+			return -1 ;
+		}
+		elements_written = 0 ;
+		// increase offset 
+		offset = offset + b_size ;   
+		// use memcpy or sprintf  ?? 
+		buf[elements_written] = element ;
+		elements_written++ ; 
+	}
+	else{
+ 		// mapping already done just write the element 
+		buf[elements_written] = element ;  
+		elements_written++ ; 
+		// check if buffer is full 
+		if(elements_written*sizeof(int) == b_size){ // this will match sometime as pagesize mutiple of int 
+		{
+			// unmap file 
+			ret_code = unmap(buf,b_size);
+			if (ret_code == -1 ){
+				// error while unmapping 
+				return -1 ; 
+			}
+			// lseek 
+			ret_code = lseek(write_fd,b_size -1,SEEK_END );
+			if (ret_code == -1 ){
+			// error while lseeking 
+				return -1 ; 
+			}
+			// map after offset bytes
+			buf = (int *)mmap((char *)0, b_size, PROT_WRITE, MAP_SHARED, write_fd, offset);// should we use MAP_PRIVATE instead
+			if(buf == (int *)-1){ // should be int* instead of char * or void * 
+				return -1 ;
+			}
+			elements_written = 0 ;	
+			// set offset for next mmap
+			offset = offset + b_size ;   
+
+		}	
+		
+	}
+	/*buf[elements_written]  = element ;
 	elements_written++ ;
 	if(elements_written == b_size){
 		// write to file
@@ -495,24 +551,30 @@ int OStreamMmap::writes(int element){
 			return -1 ; 
 		}
 		elements_written = 0 ; 
-	}
+	}*/
 	return 0 ; // return 0 means either written to buffer or to write
 }
 int OStreamMmap::closes(){
 
-	// make sure buffer elements are written if buffer is non-empty 
-	if(elements_written > 0 ){
+	// make sure we have unmapped the file 
+	ret_code = unmap(buf,b_size);
+	if (ret_code == -1 ){
+		// error while unmapping 
+		return -1 ; 
+	}
+	/*if(elements_written > 0 ){
 		int ret = write(write_fd,buf,elements_written*sizeof(int));
 		if(ret <= 0 ){
 			return -1 ;
 		}
 		elements_written = 0 ; // does not matter though 
-	}
+	}*/
+	// closing a file does not unmap the file 
 	int ret_code = close(write_fd);
 	return ret_code ; 
 
 }
 
 OStreamMmap::~OStreamMmap(){
-	delete [] buf ; 
+
 }
