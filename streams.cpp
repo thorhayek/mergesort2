@@ -352,8 +352,8 @@ OStreamFWrite::~OStreamFWrite(){
 IStreamMmap::IStreamMmap(){
 	//buf = new int[1];
 	buf = (int *)-1; // will be alloted space by mmap 
-	elements_read = 1 ;
-	b_size = 1 ; 
+	b_size = getpagesize() ; 
+	elements_read = b_size/sizeof(int);
 	file_end_flag = false ; 
 	//pagesize = getpagesize();
 	offset = (-1)*b_size;
@@ -364,7 +364,7 @@ IStreamMmap::IStreamMmap(int buffer_size){
 	buf = (int *)-1;
 	b_size = buffer_size ;  
 	// initialize the elements read to 
-	elements_read = b_size ; // ensures that firt time we use read call
+	elements_read = b_size/sizeof(int) ; // ensures that firt time we use read call
 	file_end_flag = false ;  
 	//pagesize = getpagesize();
 	offset = (-1)*b_size;
