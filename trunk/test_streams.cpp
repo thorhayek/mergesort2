@@ -2,21 +2,27 @@
 #include<iostream>
 #include<string>
 
+using namespace std ;
 int main() {
-	using namespace std ;
-	IStreamFRead ss ;
-	//IStreamRead ss ;
-	//OStreamWriteBuf sw ;
-	OStreamFWrite sw ;
-	string s = "one.bin";
-	string s2 = "onew.bin";
-	string s3 = "onew.bin";
-	ss.opens(s3);
-	//sw.create(s3);
-	//sw.writes(222);
-	cout << ss.read_next()  << endl ;
+	//IStreamRead ss;
+	//IStreamFRead ss;
+	//IStreamReadBuf ss;
+	IStreamMmap ss;
 	
-	//cout << ss.read_next()  << endl ;
-	  
+	//OStreamWrite sw;
+	//OStreamFWrite sw ;
+	//OStreamWriteBuf sw ;
+	OStreamMmap sw;
+	string s = "one.bin";
 
+	sw.create(s);
+	sw.writes(10000);
+	sw.closes();
+
+	ss.opens(s);
+	cout << ss.read_next()  << endl ;
+	if(ss.end_of_stream())
+		cout << "EOF Reached" <<endl;
+	else
+		cout << "EOF Not Reached" <<endl;
 }

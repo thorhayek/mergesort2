@@ -183,7 +183,7 @@ class OStreamMmap : public BaseOStream{
 		OStreamMmap(int buffer_size); 		
 		virtual int create(std::string &filename);
 		virtual int writes(int n);
-		virtual bool closes();
+		virtual int closes();
 		// TODO destructor 
 		~OStreamMmap() ;
 		
