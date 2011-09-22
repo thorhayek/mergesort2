@@ -4,7 +4,11 @@
 #include<fcntl.h>
 #include<unistd.h>
 #include<stdio.h>
+#include<sys/mman.h>
 
+#include<iostream>
+
+using namespace std;
 
 int IStreamRead::opens(std::string & filename){
 
@@ -369,7 +373,7 @@ IStreamMmap::IStreamMmap(int buffer_size){
 int IStreamMmap::opens(std::string & filename){
 
 	//offset = 0; // ??? WRONG 
-	pagesize = getpagesize(); // are we using this ?
+	// int pagesize = getpagesize(); // are we using this ?
 	// connect the IStream_one obj with a file 
 	read_fd = open(filename.c_str(),O_RDONLY ) ;  
 	if(read_fd < 0 ){
@@ -377,7 +381,7 @@ int IStreamMmap::opens(std::string & filename){
 	}
 	//extract file length
 	struct stat sbuf; // changed by vishay
-	stat(filename, &sbuf); //TODO check for error in the function call
+	stat((char*)(filename.c_str()), &sbuf); //TODO check for error in the function call
 	filelength = sbuf.st_size; 
 
 	return 0 ;// on success 
@@ -400,7 +404,7 @@ int IStreamMmap::read_next(){
 			buf =(int *) mmap((char *)0, b_size, PROT_READ, MAP_SHARED, read_fd, offset);
 			//Error checking
 			if(buf == (int *)-1) {
-				cout << "MMAP read_next()::mmap error"<<endl;
+				std::cout << "MMAP read_next()::mmap error"<<endl;
 			}
 		}
 		else {
@@ -461,7 +465,7 @@ IStreamMmap::~IStreamMmap(){
 OStreamMmap::OStreamMmap(){
 
 	buf = (int *)-1 ; 
-	b_size  = 1 ; 
+	b_size  = getpagesize() ; 
 	elements_written = 0 ;
 	//offset = (-1)*b_size; 
 	offset = 0 ; 
@@ -480,7 +484,7 @@ OStreamMmap::OStreamMmap(int buffer_size){
 int OStreamMmap::create(std::string & filename){
 	// creates a file of 0 bytes 
 	// set read and write right for other users creat already sets write ,append trunc flags	
-	write_fd = open(filename, O_RDWR|O_CREAT|O_TRUNC, 0666) ; // we NEED both read and write permissions here 
+	write_fd = open((char *)(filename.c_str()), O_RDWR|O_CREAT|O_TRUNC, 0666) ; // we NEED both read and write permissions here 
 	//write_fd = creat(filename.c_str(),S_IRWXG|S_IRWXU);//user and group have read write exec permisson
 	if(write_fd  < 0 ){
 		return -1 ; 
@@ -497,11 +501,14 @@ int OStreamMmap::writes(int element){
 		// FIRST TIME 
 		// first do an lseek to increase the size  of the file by buffer_size  
 		ret_code = lseek(write_fd,b_size -1 ,SEEK_END);
-		write(write_fd,'\0',1); // necessary step 
+		write(write_fd,"",1); // necessary step 
 		if (ret_code == -1){
 			// error while lseeking 
 			return -1 ; 
 		}
+		struct stat sbuf;
+		stat("one.bin", &sbuf);
+		cout << "one.bin size="<<sbuf.st_size<<endl;
 		buf = (int *)mmap(0, b_size, PROT_WRITE, MAP_SHARED, write_fd, offset);// should we use MAP_PRIVATE instead
 		if(buf == (int *)-1){ // should be int* instead of char * or void * 
 			return -1 ;
@@ -518,7 +525,7 @@ int OStreamMmap::writes(int element){
 		buf[elements_written] = element ;  
 		elements_written++ ; 
 		// check if buffer is full 
-		if(elements_written*sizeof(int) == b_size){ // this will match sometime as pagesize mutiple of int 
+		if(elements_written*sizeof(int) == b_size) // this will match sometime as pagesize mutiple of int 
 		{
 			// unmap file 
 			ret_code = munmap(buf,b_size);
@@ -563,7 +570,7 @@ int OStreamMmap::writes(int element){
 int OStreamMmap::closes(){
 
 	// make sure we have unmapped the file 
-	ret_code = unmap(buf,b_size);
+	int ret_code = munmap(buf,b_size);
 	if (ret_code == -1 ){
 		// error while unmapping 
 		return -1 ; 
@@ -576,7 +583,7 @@ int OStreamMmap::closes(){
 		elements_written = 0 ; // does not matter though 
 	}*/
 	// closing a file does not unmap the file 
-	int ret_code = close(write_fd);
+	ret_code = close(write_fd);
 	return ret_code ; 
 
 }
