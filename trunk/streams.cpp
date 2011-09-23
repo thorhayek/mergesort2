@@ -89,7 +89,9 @@ IStreamReadBuf::IStreamReadBuf(){
 	buf = new int[1];
 	elements_read = 1 ;
 	b_size = 1 ; 
-	file_end_flag = false ; 
+	file_end_flag = false;
+	total_reads = 0;
+	filelength = 0;
 
 } 
 IStreamReadBuf::IStreamReadBuf(int buffer_size){
@@ -98,18 +100,34 @@ IStreamReadBuf::IStreamReadBuf(int buffer_size){
 	// initialize the elements read to 
 	elements_read = b_size ; // ensures that firt time we use read call
 	file_end_flag = false ;  
+	total_reads = 0;
+	filelength = 0;
 }
-int IStreamReadBuf::opens(std::string & filename){
 
+IStreamReadBuf::IStreamReadBuf(const IStreamReadBuf &b){
+	read_fd = b.read_fd;
+	b_size = b.b_size;
+	elements_read = b.elements_read;
+	file_end_flag = b.file_end_flag;
+	total_reads = b.total_reads;
+	filelength = b.filelength;
+	buf = new int[b_size] ; 
+}
+
+int IStreamReadBuf::opens(std::string & filename){
 	// connect the IStream_one obj with a file 
 	read_fd = open(filename.c_str(),O_RDONLY ) ;  
 	if(read_fd < 0 ){
 		 return -1 ;  
 	}
+	struct stat sbuf;
+	stat((char*)(filename.c_str()), &sbuf); //TODO check for error in the function call
+	filelength = sbuf.st_size;
 	return 0 ;// on success 
 	// handle error 	
 
 }
+
 int IStreamReadBuf::read_next(){
 
 	int ret_code  ; 	
@@ -119,23 +137,25 @@ int IStreamReadBuf::read_next(){
 		ret_code = read(read_fd,buf,b_size*sizeof(int)) ;
 		if(ret_code == 0){
 			// i cant think of case where this will happen if end of stream is used properly  
+			file_end_flag = true ; 
 			return -2 ; 	
 		}
 		else if(ret_code < 0 ){
+			file_end_flag = true ; 
 			return -1 ; 
 		}
 		// set b_size to number of elements in the buffer 
 		if(ret_code < (b_size*sizeof(int)) ){
 			// we assume that ret_code is a multiple of 4 
 			b_size = ret_code/sizeof(int)  ;// will truncate to int if ret_code not divisible by 4(size of int)
-			file_end_flag = true ; 
 		}
 		//update elemets read
-		std::cout << "here" << std::endl ; 
+		// std::cout << "here" << std::endl ; 
 		elements_read = 0 ;
 		// read the element 
 		element = buf[elements_read] ;// 0th element 
 		elements_read++ ;
+		total_reads++ ;
 		
 	}
 	else{
@@ -143,7 +163,13 @@ int IStreamReadBuf::read_next(){
 		element = buf[elements_read] ; 
 		// update elements read 
 		elements_read++ ; 
+		total_reads++ ;
 	}
+
+ 	if ((total_reads * sizeof(int)) >= filelength){
+		file_end_flag = true;
+	}
+
 	return element ; 
 }
 bool IStreamReadBuf::end_of_stream(){
@@ -152,27 +178,16 @@ bool IStreamReadBuf::end_of_stream(){
 		// case where a buffer read did not fill the buffer
 		return true ; 
 	}
-	else{
-		// the case where buffered read just read the last element .
-		int temp_element ; 
-		int ret_code = read(read_fd,&temp_element,4); //replace 4 by size of int 
-		if(ret_code  < 4 ) {
-			// we have reached the end of the list 
-			lseek(read_fd,-ret_code,SEEK_CUR); // not really necessary
-			return true ; 
-		}  
-		else {  // ret_code = 4 
-			// eof stream not reached 
-			lseek(read_fd,-4,SEEK_CUR);
-			return false ;
-		} 
- 
+	else if ((total_reads * sizeof(int)) >= filelength){
+		file_end_flag = true;
+		return true;
 	}
-
+	return false;
 }
 IStreamReadBuf::~IStreamReadBuf(){
 	delete [] buf ;
-	close(read_fd); //check return value ? 
+	if(read_fd)
+		close(read_fd); //check return value ? 
 }
 // Buffered Write 
 //default constructor 
@@ -188,6 +203,14 @@ OStreamWriteBuf::OStreamWriteBuf(int buffer_size){
 	elements_written = 0 ; 
 
 }
+
+OStreamWriteBuf::OStreamWriteBuf(const OStreamWriteBuf &b){
+	b_size = b.b_size ; 
+	write_fd = b.write_fd;
+	elements_written = b.elements_written;
+	buf = new int[b_size];
+}
+
 int OStreamWriteBuf::create(std::string & filename){
 
 	// set read and write right for other users creat already sets write ,append trunc flags	
@@ -207,7 +230,7 @@ int OStreamWriteBuf::writes(int element){
 	elements_written++ ;
 	if(elements_written == b_size){
 		// write to file
-		std::cout << "writing to buf " <<element <<  std::endl ;
+		//std::cout << "writing to buf " <<element <<  std::endl ;
 		int ret_code = write(write_fd,buf,b_size*sizeof(int)) ;
 		
 		if(ret_code <= 0 ){
@@ -442,7 +465,7 @@ bool IStreamMmap::end_of_stream(){
 		// case where a buffer read did not fill the buffer
 		return true ; 
 	}
-	else if((elements_read*sizeof(int) + offset) > filelength) {
+	else if((elements_read*sizeof(int) + offset) >= filelength) {
 		file_end_flag == true;
 		return true;
 	}
@@ -467,7 +490,7 @@ OStreamMmap::OStreamMmap(){
 	buf = (int *)-1 ; 
 	b_size  = getpagesize() ; 
 	elements_written = 0 ;
-	//offset = (-1)*b_size; 
+	total_elements = 0 ;
 	offset = 0 ; 
 		
 
@@ -477,7 +500,7 @@ OStreamMmap::OStreamMmap(int buffer_size){
 	buf = (int *) -1 ; // initlize using some invalid memory location .. will be assigned memory by mmap 
 	b_size = buffer_size ; 
 	elements_written = 0 ;
-	//offset = (-1)*b_size ; 
+	total_elements = 0 ;
 	offset = 0 ; 
 
 }
@@ -485,7 +508,6 @@ int OStreamMmap::create(std::string & filename){
 	// creates a file of 0 bytes 
 	// set read and write right for other users creat already sets write ,append trunc flags	
 	write_fd = open((char *)(filename.c_str()), O_RDWR|O_CREAT|O_TRUNC, 0666) ; // we NEED both read and write permissions here 
-	//write_fd = creat(filename.c_str(),S_IRWXG|S_IRWXU);//user and group have read write exec permisson
 	if(write_fd  < 0 ){
 		return -1 ; 
 	}
@@ -518,12 +540,14 @@ int OStreamMmap::writes(int element){
 		offset = offset + b_size ;   
 		// use memcpy or sprintf  ?? 
 		buf[elements_written] = element ;
-		elements_written++ ; 
+		elements_written++;
+		total_elements++;
 	}
 	else{
  		// mapping already done just write the element 
 		buf[elements_written] = element ;  
 		elements_written++ ; 
+		total_elements++;
 		// check if buffer is full 
 		if(elements_written*sizeof(int) == b_size) // this will match sometime as pagesize mutiple of int 
 		{
@@ -536,14 +560,14 @@ int OStreamMmap::writes(int element){
 			// create NEW Mapping 
 			// lseek 
 			ret_code = lseek(write_fd,b_size -1,SEEK_END );
-			write(write_fd,'\0',1); // this will actually incerase the size 
+			write(write_fd,"",1); // this will actually incerase the size 
 			if (ret_code == -1 ){
 			// error while lseeking 
 				return -1 ; 
 			}
 			// map after offset bytes
 			buf = (int *)mmap(0, b_size, PROT_WRITE, MAP_SHARED, write_fd, offset);// should we use MAP_PRIVATE instead
-			if(buf == (int *)-1){ // should be int* instead of char * or void * 
+			if(buf == (int *)-1){ 
 				return -1 ;
 			}
 			elements_written = 0 ;	
@@ -583,9 +607,16 @@ int OStreamMmap::closes(){
 		elements_written = 0 ; // does not matter though 
 	}*/
 	// closing a file does not unmap the file 
+	
+	ret_code = ftruncate(write_fd,total_elements*sizeof(int));
+	if(ret_code == -1) {
+		cout << "couldn't truncate"<<endl;
+	}
 	ret_code = close(write_fd);
+	if(ret_code == -1) {
+		cout << "couldn't close"<<endl;
+	}
 	return ret_code ; 
-
 }
 
 OStreamMmap::~OStreamMmap(){
