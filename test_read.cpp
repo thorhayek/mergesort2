@@ -19,7 +19,7 @@ int write_fd = open("one_mmap.bin", O_RDWR|O_CREAT|O_TRUNC,S_IRWXG|S_IRWXU) ;
 //int write_fd = creat("one_mmap.bin",S_IRWXG|S_IRWXU);//user and group have read write exec permisson
 //int fd = open("one_mmap_write.bin",O_WRONLY);
 if(write_fd < 0){
-	cout << "could not open file " << errno ;
+	cout << "could not open file " << errno;
 }
 int ret_code ;
 char *bufc ;

@@ -71,11 +71,14 @@ class IStreamReadBuf :public BaseIStream{
 	 	int   *buf ; // will be initialized by constructor we need this to be persistent during diff calls 
 		int elements_read ; 
 		int b_size ; // we have to keep track  of size ??  // no of elements in buffer
-		bool file_end_flag ;  
+		bool file_end_flag ; 
+		int total_reads;
+		int filelength;
 	public :
 		// default constructor 
 		IStreamReadBuf(); // creates buffer of size 1 
 		IStreamReadBuf(int buffer_size); // where buffer size is the num of elements 
+		IStreamReadBuf(const IStreamReadBuf &b); // where buffer size is the num of elements 
 		virtual int opens(std::string & filename)  ; //  assign value to fd 
 		virtual int read_next() ; // will return the next int and will implement buffering
 		virtual bool end_of_stream() ;
@@ -92,6 +95,7 @@ class OStreamWriteBuf : public BaseOStream{
 		//default construct 
 		OStreamWriteBuf(); // creates buffer of size 1 
 		OStreamWriteBuf(int buffer_size); 
+		OStreamWriteBuf(const OStreamWriteBuf &b); 
 		virtual int create(std::string &filename ) ;
 		virtual int  writes(int number) ;
 		virtual int  closes() ; // redefine because when close we have to empty the buffer
@@ -175,6 +179,7 @@ class OStreamMmap : public BaseOStream{
 		int *buf ;
 		int b_size ;  // no if elements the buffer can hold 
 		int elements_written ;  // no of elements already written
+		int total_elements;  // no of elements already written
 		int offset ;  
 
 	public:
