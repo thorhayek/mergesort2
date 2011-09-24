@@ -6,6 +6,7 @@
 const static int d = 5 ;
 const static int count = 10 ;
 int main(){
+
 	using namespace std ; 
 
 	int i,j ;
@@ -15,7 +16,7 @@ int main(){
 	ofstream outfiles[d];
 	//ofstream one ; 
 	//one.open("one.bin",ios::out | ios::binary);
-	int number = 1 ; 
+	int number = count * d + 1 ; 
 	//one.write((char*)&number,4) ;
 	//one.close();
 
@@ -36,13 +37,17 @@ int main(){
 
 			outfiles[j].write((char*)&number,4) ;
 			//outfiles[j].flush();
-			//cout << "writing to file "<< filename<< "the number "<< number << endl ;
-			number++ ;
+			//cout << "writing to file "<< filename<< "the number "<< number << endl ;i
+			cout << "wrote number " << number  << "to file "<< j << ".bin"<<endl ;
+			number-- ;
 			//clear stream 
 		}
 		// written to this file now close 
 	}
+	//int eof = EOF ;
 	for(i=0 ; i < d ; i++){
+		//outfiles[i].write("",1);
+
 		outfiles[i].close();
 	}
 }
