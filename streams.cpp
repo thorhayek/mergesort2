@@ -52,11 +52,16 @@ bool IStreamRead::end_of_stream(){
 		return false ;
 	} 
 
-}  
+}
+int IStreamRead::closes(){
+	
+	int ret_code = close(read_fd);
+	return ret_code ; 
 
+}
 IStreamRead::~IStreamRead(){
 	//delete [] buf ;
-	close(read_fd); //check return value ? 
+	//close(read_fd); //check return value ? 
 }
 int OStreamWrite::create(std::string & filename){
 
@@ -186,8 +191,12 @@ bool IStreamReadBuf::end_of_stream(){
 }
 IStreamReadBuf::~IStreamReadBuf(){
 	delete [] buf ;
-	if(read_fd)
-		close(read_fd); //check return value ? 
+	//if(read_fd)
+}
+int IStreamReadBuf::closes(){
+
+	int ret_code=close(read_fd); //check return value ?
+	return ret_code ;
 }
 // Buffered Write 
 //default constructor 
@@ -318,8 +327,17 @@ bool IStreamFRead::end_of_stream(){
 }
 IStreamFRead::~IStreamFRead(){
 	delete [] buf ;
-	fclose(read_ptr); //check return value ? 
 }
+int IStreamFRead::closes(){
+
+	int ret_code = fclose(read_ptr); 
+	if(ret_code == 0){
+		return ret_code ;
+	}
+	else{
+		return -1; // fclose returns EOF on error but we wanted to keep things consistent across all our streams  
+	}	
+}	
 // fwrite stream
 OStreamFWrite::OStreamFWrite(){
 	buf = new int[1] ;
@@ -393,6 +411,18 @@ IStreamMmap::IStreamMmap(int buffer_size){
 	offset = (-1)*b_size;
 
 }
+
+IStreamMmap::IStreamMmap(const IStreamMmap &b){
+		read_fd = b.read_fd ;
+		elements_read = b.elements_read ;
+		b_size = b.b_size ;
+		file_end_flag = b.file_end_flag ;
+		offset = b.offset ;
+		filelength = b.filelength ;
+		// ensure that there is no shallow copy of the buf
+		buf = (int *)-1; // initiliazing to some useless memory address 
+
+}	
 int IStreamMmap::opens(std::string & filename){
 
 	//offset = 0; // ??? WRONG 
@@ -473,14 +503,17 @@ bool IStreamMmap::end_of_stream(){
 		return false;
 	}
 }
+int  IStreamMmap::closes(){
 
+	int ret_code = close(read_fd); 
+	return ret_code ;
+}	
 IStreamMmap::~IStreamMmap(){
 	//munmap previous mapping, if any
 	if (buf != (int *)-1) {
 		munmap(buf, b_size);
 	}
 
-	close(read_fd); //check return value ? 
 }
 
 // Buffered Write 
@@ -504,6 +537,17 @@ OStreamMmap::OStreamMmap(int buffer_size){
 	offset = 0 ; 
 
 }
+
+OStreamMmap::OStreamMmap(const OStreamMmap &b){
+
+		write_fd = b.write_fd ;
+		b_size = b.b_size ;
+		elements_written = b.elements_written ;
+		total_elements = b.total_elements ;
+		offset  = b.offset ; 
+		buf = (int *)-1 ;
+
+}	
 int OStreamMmap::create(std::string & filename){
 	// creates a file of 0 bytes 
 	// set read and write right for other users creat already sets write ,append trunc flags	
