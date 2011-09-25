@@ -8,20 +8,20 @@ using namespace std ;
 int main(int argc, char *argv[]) {
 	//IStreamRead ss;
 	//IStreamFRead ss;
-	vector<IStreamReadBuf> ss(atoi(argv[1]),IStreamReadBuf(1024));
+	//vector<IStreamReadBuf> ss(atoi(argv[1]),IStreamReadBuf(1024));
 	//vector<IStreamReadBuf> ss(2,IStreamReadBuf(1024));
-	//vector<IStreamMmap> ss(2,IStreamMmap(1024));
+	vector<IStreamMmap> ss(2,IStreamMmap(1024));
 	//IStreamMmap ss(4096);
 	
 	//OStreamWrite sw;
 	//OStreamFWrite sw ;
-	vector<OStreamWriteBuf> sw(atoi(argv[1]),OStreamWriteBuf(1024));
+	//vector<OStreamWriteBuf> sw(atoi(argv[1]),OStreamWriteBuf(1024));
 	//vector<OStreamWriteBuf> sw(2,OStreamWriteBuf(1024));
-	//vector<OStreamMmap> sw(2,OStreamMmap(1024));
+	vector<OStreamMmap> sw(2,OStreamMmap(1024));
 	//OStreamMmap sw(4096);
 	string s = "one.bin";
 	sw[0].create(s);
-	for(int i=0; i<100000; i++)
+	for(int i=0; i<1000; i++)
 	{	sw[0].writes(i);
 	}
 	sw[0].closes();
