@@ -17,6 +17,8 @@ class BaseIStream {
 	// virtual has an extra overhead ..make sure its reqd
 	virtual int read_next() = 0; // will return the next int 
 	virtual int opens(std::string & filename) = 0 ; //  assign value to fd 
+	// CONCEPT .. when you redefine one base class overloaded function it hides all overloaded functions  so we have to redefine all overloaded funcs 
+	virtual int opens(std::string & filename,int offset) = 0 ; // offset is usually the size of M  
 	virtual bool end_of_stream() = 0 ;
 	virtual int closes() = 0;
 
@@ -46,6 +48,7 @@ class IStreamRead :public BaseIStream{
 		// default constructor
 		//IStreamRead(); 
 		virtual int opens(std::string & filename)  ; //  assign value to fd 
+		virtual int opens(std::string & filename,int offset)  ; //  assign value to fd 
 		virtual int read_next() ; // will return the next int 
 		virtual bool end_of_stream()  ;
 		virtual int closes();
@@ -82,6 +85,7 @@ class IStreamReadBuf :public BaseIStream{
 		IStreamReadBuf(int buffer_size); // where buffer size is the num of elements 
 		IStreamReadBuf(const IStreamReadBuf &b); // where buffer size is the num of elements 
 		virtual int opens(std::string & filename)  ; //  assign value to fd 
+		virtual int opens(std::string & filename,int offset)  ; //  assign value to fd 
 		virtual int read_next() ; // will return the next int and will implement buffering
 		virtual bool end_of_stream() ;
 		virtual int closes();
@@ -124,6 +128,7 @@ class IStreamFRead : public BaseIStream{
 		// other constructors 
 		IStreamFRead(int buffer_size);
 		virtual int opens(std::string & filename)  ; //  assign value to fd 
+		virtual int opens(std::string & filename,int offset)  ; //  assign value to fd 
 		virtual int  read_next() ; // will return the next int 
 		virtual bool end_of_stream()  ;
 		virtual int closes();
@@ -171,6 +176,7 @@ class IStreamMmap : public BaseIStream{
 		IStreamMmap(const IStreamMmap &b);  
 		virtual int read_next() ; // will return the next int 
 		virtual int opens(std::string & filename)  ; //  assign value to fd 
+		virtual int opens(std::string & filename,int offset)  ; //  assign value to fd 
 		virtual bool end_of_stream() ;
 		virtual int closes();
 		~IStreamMmap() ; // this does not have to be virtual 
