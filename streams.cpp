@@ -21,6 +21,19 @@ int IStreamRead::opens(std::string & filename){
 	// handle error 	
 
 }
+int IStreamRead::opens(std::string & filename,int offset){
+		
+	read_fd = open(filename.c_str(),O_RDONLY ) ;  
+	if(read_fd < 0 ){
+		 return -1 ;  
+	}
+	// now lseek offset byes 
+	int ret_code = lseek(read_fd,offset,SEEK_SET);
+	if(ret_code == -1){
+		return ret_code ;
+	}
+	return 0 ;// on success 
+}	
 int IStreamRead::read_next(){
 
 	// reads one 
@@ -132,6 +145,26 @@ int IStreamReadBuf::opens(std::string & filename){
 	// handle error 	
 
 }
+int IStreamReadBuf::opens(std::string & filename,int offset){
+	// connect the IStream_one obj with a file 
+	read_fd = open(filename.c_str(),O_RDONLY ) ;  
+	if(read_fd < 0 ){
+		 return -1 ;  
+	}
+	struct stat sbuf;
+	stat((char*)(filename.c_str()), &sbuf); //TODO check for error in the function call
+	filelength = sbuf.st_size;
+
+	// now lseek
+	int ret_code = lseek(read_fd,offset,SEEK_SET);
+	if(ret_code == -1){
+		return ret_code ;
+	}
+
+	return 0 ;// on success 
+	// handle error 	
+
+}
 
 int IStreamReadBuf::read_next(){
 
@@ -141,7 +174,7 @@ int IStreamReadBuf::read_next(){
 		// make a new 
 		ret_code = read(read_fd,buf,b_size*sizeof(int)) ;
 		if(ret_code == 0){
-			// i cant think of case where this will happen if end of stream is used properly  
+			// case where remaining bits < than buffer size
 			file_end_flag = true ; 
 			return -2 ; 	
 		}
@@ -284,6 +317,19 @@ int IStreamFRead::opens(std::string & filename){
 	read_ptr = fopen(filename.c_str(),"rb");
 	if(read_ptr == NULL){
 		return -1 ;
+	}
+	return 0 ;
+}
+
+int IStreamFRead::opens(std::string & filename,int offset){
+	
+	read_ptr = fopen(filename.c_str(),"rb");
+	if(read_ptr == NULL){
+		return -1 ;
+	}
+	int ret_code = fseek(read_ptr,offset,SEEK_SET);
+	if(ret_code != 0 ){
+			return -1 ;
 	}
 	return 0 ;
 }
@@ -437,6 +483,29 @@ int IStreamMmap::opens(std::string & filename){
 	stat((char*)(filename.c_str()), &sbuf); //TODO check for error in the function call
 	filelength = sbuf.st_size; 
 
+	return 0 ;// on success 
+	// handle error 	
+
+}
+int IStreamMmap::opens(std::string & filename,int offset){
+
+	//offset = 0; // ??? WRONG 
+	// int pagesize = getpagesize(); // are we using this ?
+	// connect the IStream_one obj with a file 
+	read_fd = open(filename.c_str(),O_RDONLY ) ;  
+	if(read_fd < 0 ){
+		 return -1 ;  
+	}
+	//extract file length
+	struct stat sbuf; // changed by vishay
+	stat((char*)(filename.c_str()), &sbuf); //TODO check for error in the function call
+	filelength = sbuf.st_size; 
+
+	// CHECK  IF THIS WILL CAUSE PROBLEM WITH MMAP TODO
+	int ret_code = lseek(read_fd,offset,SEEK_SET);
+	if(ret_code == -1){
+		return ret_code ;
+	}
 	return 0 ;// on success 
 	// handle error 	
 
