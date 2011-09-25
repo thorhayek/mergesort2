@@ -18,6 +18,7 @@ class BaseIStream {
 	virtual int read_next() = 0; // will return the next int 
 	virtual int opens(std::string & filename) = 0 ; //  assign value to fd 
 	virtual bool end_of_stream() = 0 ;
+	virtual int closes() = 0;
 
 	// virtual destructor is a good practice for all base classes
 	virtual ~BaseIStream() {}  // inline empty definition  
@@ -47,6 +48,7 @@ class IStreamRead :public BaseIStream{
 		virtual int opens(std::string & filename)  ; //  assign value to fd 
 		virtual int read_next() ; // will return the next int 
 		virtual bool end_of_stream()  ;
+		virtual int closes();
 	// we dont need to have a virtual destructor (default will do) here as the base class destructor which is virtual will be called automatically
 		// destructor can closes the file  
 		virtual ~IStreamRead();	
@@ -82,6 +84,7 @@ class IStreamReadBuf :public BaseIStream{
 		virtual int opens(std::string & filename)  ; //  assign value to fd 
 		virtual int read_next() ; // will return the next int and will implement buffering
 		virtual bool end_of_stream() ;
+		virtual int closes();
 		virtual ~IStreamReadBuf() ;  
 		// destructor reqd but should it be virtual ?? stack overflow ??  
 };
@@ -123,6 +126,7 @@ class IStreamFRead : public BaseIStream{
 		virtual int opens(std::string & filename)  ; //  assign value to fd 
 		virtual int  read_next() ; // will return the next int 
 		virtual bool end_of_stream()  ;
+		virtual int closes();
 		// DEFINE DESTRUCTOR !!!!
 		~IStreamFRead();
 
@@ -163,9 +167,12 @@ class IStreamMmap : public BaseIStream{
 		// default constructor 
 		IStreamMmap() ; // initalizes page size 
 		IStreamMmap(int buffer_size) ; // initalizes page size 
+		// COPY CONSTRUCTOR 
+		IStreamMmap(const IStreamMmap &b);  
 		virtual int read_next() ; // will return the next int 
 		virtual int opens(std::string & filename)  ; //  assign value to fd 
 		virtual bool end_of_stream() ;
+		virtual int closes();
 		~IStreamMmap() ; // this does not have to be virtual 
 
 };
@@ -186,6 +193,7 @@ class OStreamMmap : public BaseOStream{
 		//default construct 
 		OStreamMmap(); // creates buffer of size 1 
 		OStreamMmap(int buffer_size); 		
+		OStreamMmap(const OStreamMmap &b); 
 		virtual int create(std::string &filename);
 		virtual int writes(int n);
 		virtual int closes();
