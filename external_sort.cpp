@@ -1,4 +1,5 @@
 #include"streams.h"
+#include"heap.h"
 #include<iostream>
 #include<string>
 #include<vector>
@@ -6,22 +7,25 @@
 #include<cstdlib>
 #include<queue>
 
+int get_file_index(std::string &s);
 std::string make_file_name(int i);
+std::string make_out_file_name(int i);
+int d_way_merge(std::vector<IStreamReadBuf*> &infiles,int d ,OStreamWriteBuf &outfiles);
 int compare (const void * a, const void * b);
 
 using namespace std ;
 int main(int argc, char *argv[]) {
 
 
-	int pagesize = getpagesize();
-	const int N =  40*pagesize ; // N ==  10*4096
+	int pagesize = getpagesize() ;
+	const int N =  40*pagesize ; // N ==  10*4096 ints 
 	const int M =  2*pagesize  ;   // M =  2 * 4096  // M HAS TO BE divisible by size of int 
 	// N/M  = 20 ;  
 	const int d =  5 ;   // 5 ways merge at a time 
 	
 	int offset = 0; 
 	// create master file 
-	OStreamWriteBuf writebuf_stream(1024); // buffer size = 40 
+	OStreamWriteBuf writebuf_stream(1024); // buffer size = optimum  
 	string s = "m_files/master.bin";
 	writebuf_stream.create(s);
 	for(int i=0; i < 10*pagesize ; i++) // 10*pagesize elements written ==> size of file = N  
@@ -72,6 +76,7 @@ int main(int argc, char *argv[]) {
 						wb.writes(temp_array[j]);		
 			 }
 			 wb.closes();
+			 delete [] temp_array ;
 
 	}	
 
@@ -97,56 +102,87 @@ int main(int argc, char *argv[]) {
 	// PART 3
 	 int vector_size = N/M ;	
 	 int out_index = 0 ;	
+	 int ret_code = 0;
+ 	 //IStreamReadBuf **infiles = new IStreamReadBuf*[d]; //or  vector<IStreamReadBuf *> var(d)
+	 vector<IStreamReadBuf *> infiles(d) ;
 	 // while elements remain pop d elements from the queue then store them in  
-	 while(!q.empty()){
+	 while(!rbs_queue.empty()){
 			
 		 	// pop d elements 
-		 	IStreamReadBuf **infiles = new IStreamReadBuf*[d]; // vector<IStreamReadBuf *> var(d)
+		 	cout << "reached top " << endl ;
 			
 			for(int i = 0 ; i < d ; i++){
-					infiles[i] = q.front();
-            		q.pop();
+					infiles[i] = rbs_queue.front();
+            		rbs_queue.pop();
 			}
-			OStreamWriteBuf outfile ; // CHANGE BUFFER SIZE TODO
-			out_file_name = make_out_file_name(out_index);
+			OStreamWriteBuf outfile(1024) ; // CHANGE BUFFER SIZE TODO
+			std::string out_file_name = make_out_file_name(out_index);
 
+		 	cout << "reached top 2" << endl ;
 			outfile.create(out_file_name);
+		 	cout << "reached top 3" << endl ;
 			// d_way_merge starts for these d files 
-			d_way_merge(infiles,d,outfile);
+			int d_ret = d_way_merge(infiles,d,outfile);
+		 	cout << "reached top 4" << endl ;
+			cout <<"ret_code for d_way_merge "<< d_ret << endl ;
 			// close output file 
-			outfile.close();
+			int ret_code = outfile.closes();
+			if(ret_code < 0){
+					cout << "ret code for closes =" << ret_code <<" breaking for while loop " << endl ;
+					break ;
+			}
 			// open a d merge object and add it to the queue 
-			IStreamReadBuf temp_read ;  // TODO Add Buffer size 
-			temp_read.open(out_file_name);
-			
+			IStreamReadBuf temp_read(1024) ;  // TODO Add Buffer size
+			ret_code =temp_read.opens(out_file_name);
+			//cout << "opened file name " << out_file_name ;
+			if(ret_code < 0){
+					cout << "could not opene file " << out_file_name << endl ;
+					cout << "ret code for opens = " << ret_code <<" breaking for while loop " << endl ;
+					break ;
+			}	
 			rbs_vector.push_back(temp_read); // index of new object = vector_size + out_index + 1
-			int new_index = vector_size + out_index + 1 ;
+			int new_index = vector_size + out_index  ;
+			cout << "new index =  "<< new_index <<endl ;
 			rbs_queue.push(&(rbs_vector[new_index]));
 			cout << "sanity check temp_object filename == " << temp_read.getFilename() << "is same as vector filename == " << rbs_vector[new_index].getFilename() << endl ;
 			
 
 			out_index += 1 ;
+			cout << "end of iteration " << endl ;
+			//delete [];i
+			//for(int i = 0 ; i < d ; i++){
+					//cout << "deleting " << i ;
+					//delete infiles[i];
+			//}
+			//delete [] infiles ;
+			//cout << "end of iteration 2 " << endl ;
+			//infiles = NULL ;
 								             
     }
 
 	
 }
 
-d_way_merge(BaseIStream *infiles,int d,BaseOStream & outfile){
+int d_way_merge(vector<IStreamReadBuf *> &infiles,int d,OStreamWriteBuf & outfile){
 
 		// initialize the heap
 	    PQ  heap(d);
 		int streams_open = d ;
+		cout << "inside d_way _merge " << endl ;
 		// write the first d elements 
-		for( j= 0 ; j < d ; j++){
-			int number ;
-			string filename = infiles[j].filename ; 
-			infiles[j].read((char*)&number,4) ;
+		for(int j= 0 ; j < d ; j++){
+			//int number ;
+			cout << "before this " << endl ;
+			string filename = infiles[j]->getFilename() ; 
+			cout << "after this with filename "<< filename  << endl ;
+			int number = infiles[j]->read_next() ;
+			cout << "after this 2 " << endl ;
 			Item a(number,filename);
 			heap.insert(a) ;
 			//cout << "read and inserted number " << number << endl ; 
 		}
 		
+		cout << "inside d_way _merge " << endl ;
 		while(streams_open > 0 ){
 
 
@@ -156,7 +192,7 @@ d_way_merge(BaseIStream *infiles,int d,BaseOStream & outfile){
 			cout << "deleted number " << n << " from heap from file " << s<<endl ;
 			string filename = s ; // calls a copy constructor i
 			// WRITE THE MAX element to file 
-			int ret_code = outfile.write((char*)&n,4);
+			int ret_code = outfile.writes(n);
 			if(ret_code < 0){
 					cout << "writing to output failed breaking from while loop "<<endl ;
 					break ; 
@@ -168,16 +204,16 @@ d_way_merge(BaseIStream *infiles,int d,BaseOStream & outfile){
 					return -1 ;
 			}			
 			cout << "file index of file we are reading from ==  " << file_index << endl ;
-			if(infiles[file_index].end_of_stream()){
+			if(infiles[file_index]->end_of_stream()){
 					streams_open-- ;	
-					infiles[file_index].close();
-					cout << "****File " << filename << "reached eof .closing corresponding stream " << endl ;
+					infiles[file_index]->closes();
+					cout << "****File " << filename << "reached eof closing corresponding stream " << endl ;
 					// WE wont insert here
 					continue ;
 			}	
 			// read element from the file that got removed from heap  
-			int number ;
-			infiles[file_index].read((char*)&number,4);
+			//int number ;
+			int number = infiles[file_index]->read_next();
 			Item a(number,filename);
 			// now add this number to heap i
 			cout <<"adding  number to the heap = "<< number <<"got this number from file  " << filename << endl ;
@@ -186,7 +222,8 @@ d_way_merge(BaseIStream *infiles,int d,BaseOStream & outfile){
 			// Always check for eof after READ !!! IMP 
 			
 	}
-
+	cout << "reached  end of d_way merge " << endl ;
+	return 0 ;
 
 }	
 std::string  make_file_name(int i){
@@ -227,7 +264,7 @@ int get_file_index(std::string &s){
 			
 			//cout << "index of dot character "<< index <<endl ;
 			s.erase(index);
-			index = s.find("_") + 1 ;
+			index = s.rfind("_") + 1 ;
 			s.erase(0,index);
 			//cout << " string after erase " << s << endl ;
 			int file_index = atoi(s.c_str())	;
