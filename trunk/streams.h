@@ -35,7 +35,7 @@ class BaseOStream {
 	virtual int create(std::string &filename ) = 0;
 	virtual int writes(int number) = 0;
 	virtual int closes() = 0; // closes the file and detaches streami
-	virtual std::string getFilename();
+	//virtual std::string getFilename();
 	// virtual destructor is a good practice for all base classes
 	virtual ~BaseOStream()  {} 
 
