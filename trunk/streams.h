@@ -4,7 +4,7 @@
 
 #include<iostream>
 #include<string>
-
+#include<sys/types.h>
 
 // ABSTRACT BASEIStream class 
 class BaseIStream {
@@ -18,7 +18,7 @@ class BaseIStream {
 	virtual int read_next() = 0; // will return the next int 
 	virtual int opens(std::string & filename) = 0 ; //  assign value to fd 
 	// CONCEPT .. when you redefine one base class overloaded function it hides all overloaded functions  so we have to redefine all overloaded funcs 
-	virtual int opens(std::string & filename,int offset) = 0 ; // offset is usually the size of M  
+	virtual int opens(std::string & filename, ulong offset) = 0 ; // offset is usually the size of M  
 	virtual bool end_of_stream() = 0 ;
 	virtual int closes() = 0;
 
@@ -49,7 +49,7 @@ class IStreamRead :public BaseIStream{
 		// default constructor
 		//IStreamRead(); 
 		virtual int opens(std::string & filename)  ; //  assign value to fd 
-		virtual int opens(std::string & filename,int offset)  ; //  assign value to fd 
+		virtual int opens(std::string & filename,ulong offset)  ; //  assign value to fd 
 		virtual int read_next() ; // will return the next int 
 		virtual bool end_of_stream()  ;
 		virtual int closes();
@@ -75,19 +75,19 @@ class IStreamReadBuf :public BaseIStream{
 		//XXX Shantha: you can make read_fd a protected member in BaseIStream
 		int read_fd ; // have to redefine here as inhertiance does not include private read_f
 	 	int   *buf ; // will be initialized by constructor we need this to be persistent during diff calls 
-		int elements_read ; 
-		int b_size ; // we have to keep track  of size ??  // no of elements in buffer
+		ulong elements_read ; 
+		ulong b_size ; // we have to keep track  of size ??  // no of elements in buffer
 		bool file_end_flag ; 
-		int total_reads;
-		int filelength;
+		ulong total_reads;
+		ulong filelength;
 		std::string filename ;
 	public :
 		// default constructor 
 		IStreamReadBuf(); // creates buffer of size 1 
-		IStreamReadBuf(int buffer_size); // where buffer size is the num of elements 
+		IStreamReadBuf(ulong buffer_size); // where buffer size is the num of elements 
 		IStreamReadBuf(const IStreamReadBuf &b); // where buffer size is the num of elements 
 		virtual int opens(std::string & filename)  ; //  assign value to fd 
-		virtual int opens(std::string & filename,int offset)  ; //  assign value to fd 
+		virtual int opens(std::string & filename,ulong offset)  ; //  assign value to fd 
 		virtual int read_next() ; // will return the next int and will implement buffering
 		virtual bool end_of_stream() ;
 		virtual int closes();
@@ -98,12 +98,12 @@ class OStreamWriteBuf : public BaseOStream{
 	private :
 		int write_fd ; // have to redefine here as inhertiance does not include private read_fd
 		int *buf ;
-		int b_size ;  // no if elements the buffer can hold 
-		int elements_written ;  // no of elements already written 
+		ulong b_size ;  // no if elements the buffer can hold 
+		ulong elements_written ;  // no of elements already written 
 	public:
 		//default construct 
 		OStreamWriteBuf(); // creates buffer of size 1 
-		OStreamWriteBuf(int buffer_size); 
+		OStreamWriteBuf(ulong buffer_size); 
 		OStreamWriteBuf(const OStreamWriteBuf &b); 
 		virtual int create(std::string &filename ) ;
 		virtual int  writes(int number) ;
@@ -120,8 +120,8 @@ class IStreamFRead : public BaseIStream{
 		int *buf ;
 		static const int SIZE = sizeof(int); //
 		// size of buffer 
-		int b_size ;
-		int elements_read ; 
+		ulong b_size ;
+		ulong elements_read ; 
 		std::string filename ;
  	
 			
@@ -129,10 +129,10 @@ class IStreamFRead : public BaseIStream{
 		// default constructor 
 		IStreamFRead();
 		// other constructors 
-		IStreamFRead(int buffer_size);
+		IStreamFRead(ulong buffer_size);
 		IStreamFRead(const IStreamFRead& b);
 		virtual int opens(std::string & filename)  ; //  assign value to fd 
-		virtual int opens(std::string & filename,int offset)  ; //  assign value to fd 
+		virtual int opens(std::string & filename,ulong offset)  ; //  assign value to fd 
 		virtual int  read_next() ; // will return the next int 
 		virtual bool end_of_stream()  ;
 		virtual int closes();
@@ -146,13 +146,13 @@ class OStreamFWrite : public BaseOStream{
 	private:
 		FILE *write_ptr ;
 		int  *buf ; 
-		int b_size ; 
+		ulong b_size ; 
 		static const int SIZE = sizeof(int); 
-		int elements_written ; 
+		ulong elements_written ; 
 	public :
 		// constructors 
 	 	OStreamFWrite();
-		OStreamFWrite(int buffer_size);
+		OStreamFWrite(ulong buffer_size);
 		OStreamFWrite(const OStreamFWrite& b);
 		virtual int create(std::string & filename);
 		virtual int writes(int n);
@@ -166,23 +166,23 @@ class IStreamMmap : public BaseIStream{
 	private:
 		int read_fd ; 
 		int *buf;
-		int elements_read;
-		int b_size; // This will be  a multiple of pagesize
+		ulong elements_read;
+		ulong b_size; // This will be  a multiple of pagesize
 		bool file_end_flag;
-		int offset;	//Current offset from which to start reading from file. It is aligned with virtual page size
+		ulong offset;	//Current offset from which to start reading from file. It is aligned with virtual page size
 		//int pagesize; //page size of the operating system  reqd ?? 
-		int filelength; //length of the file being opened
+		ulong filelength; //length of the file being opened
 		std::string filename ;
 
 	public :
 		// default constructor 
 		IStreamMmap() ; // initalizes page size 
-		IStreamMmap(int buffer_size) ; // initalizes page size 
+		IStreamMmap(ulong buffer_size) ; // initalizes page size 
 		// COPY CONSTRUCTOR 
 		IStreamMmap(const IStreamMmap &b);  
 		virtual int read_next() ; // will return the next int 
 		virtual int opens(std::string & filename)  ; //  assign value to fd 
-		virtual int opens(std::string & filename,int offset)  ; //  assign value to fd 
+		virtual int opens(std::string & filename, ulong offset)  ; //  assign value to fd 
 		virtual bool end_of_stream() ;
 		virtual int closes();
 		~IStreamMmap() ; // this does not have to be virtual 
@@ -196,15 +196,15 @@ class OStreamMmap : public BaseOStream{
 		// add other stuff
 		int write_fd ; 
 		int *buf ;
-		int b_size ;  // no if elements the buffer can hold 
-		int elements_written ;  // no of elements already written
-		int total_elements;  // no of elements already written
-		int offset ;  
+		ulong b_size ;  // no if elements the buffer can hold 
+		ulong elements_written ;  // no of elements already written
+		ulong total_elements;  // no of elements already written
+		ulong offset ;  
 
 	public:
 		//default construct 
 		OStreamMmap(); // creates buffer of size 1 
-		OStreamMmap(int buffer_size); 		
+		OStreamMmap(ulong buffer_size); 		
 		OStreamMmap(const OStreamMmap &b); 
 		virtual int create(std::string &filename);
 		virtual int writes(int n);

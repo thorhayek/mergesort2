@@ -22,7 +22,7 @@ int IStreamRead::opens(std::string & filename){
 	// handle error 	
 
 }
-int IStreamRead::opens(std::string & filename,int offset){
+int IStreamRead::opens(std::string & filename, ulong offset){
 		
 	read_fd = open(filename.c_str(),O_RDONLY ) ;  
 	this->filename = filename ;
@@ -114,7 +114,7 @@ IStreamReadBuf::IStreamReadBuf(){
 	filelength = 0;
 
 } 
-IStreamReadBuf::IStreamReadBuf(int buffer_size){
+IStreamReadBuf::IStreamReadBuf(ulong buffer_size){
 	buf = new int[buffer_size/sizeof(int)] ; 
 	b_size = buffer_size/sizeof(int);  
 	// initialize the elements read to 
@@ -148,7 +148,7 @@ int IStreamReadBuf::opens(std::string & filename){
 	// handle error 	
 
 }
-int IStreamReadBuf::opens(std::string & filename,int offset){
+int IStreamReadBuf::opens(std::string & filename,ulong offset){
 	// connect the IStream_one obj with a file 
 	read_fd = open(filename.c_str(),O_RDONLY ) ;  
 	this->filename = filename ;
@@ -243,7 +243,7 @@ OStreamWriteBuf::OStreamWriteBuf(){
 	elements_written = 0 ; 
 
 }
-OStreamWriteBuf::OStreamWriteBuf(int buffer_size){
+OStreamWriteBuf::OStreamWriteBuf(ulong buffer_size){
 	buf = new int[buffer_size/sizeof(int)];
 	b_size = buffer_size/sizeof(int); 
 	elements_written = 0 ; 
@@ -311,7 +311,7 @@ IStreamFRead::IStreamFRead(){
 	b_size = 1 ; 
 	elements_read = b_size ;
 }
-IStreamFRead::IStreamFRead(int buffer_size){
+IStreamFRead::IStreamFRead(ulong buffer_size){
 	buf = new int[buffer_size/sizeof(int)];
 	b_size = buffer_size/sizeof(int); 
 	elements_read = b_size ; 
@@ -331,7 +331,7 @@ int IStreamFRead::opens(std::string & filename){
 	return 0 ;
 }
 
-int IStreamFRead::opens(std::string & filename,int offset){
+int IStreamFRead::opens(std::string & filename,ulong offset){
 	
 	read_ptr = fopen(filename.c_str(),"rb");
 	this->filename = filename ;
@@ -402,7 +402,7 @@ OStreamFWrite::OStreamFWrite(){
 	elements_written = 0 ; 
 
 }
-OStreamFWrite::OStreamFWrite(int buffer_size){
+OStreamFWrite::OStreamFWrite(ulong buffer_size){
 	b_size = buffer_size/sizeof(int); 
 	buf = new int[buffer_size/sizeof(int)];
 	elements_written = 0 ; 
@@ -459,7 +459,7 @@ IStreamMmap::IStreamMmap(){
 	offset = (-1)*b_size;
 
 } 
-IStreamMmap::IStreamMmap(int buffer_size){
+IStreamMmap::IStreamMmap(ulong buffer_size){
 	//buf = new int[buffer_size] ; 
 	buf = (int *)-1;
 	b_size = buffer_size ;  
@@ -503,7 +503,7 @@ int IStreamMmap::opens(std::string & filename){
 	// handle error 	
 
 }
-int IStreamMmap::opens(std::string & filename,int offset){
+int IStreamMmap::opens(std::string & filename,ulong offset){
 
 	//offset = 0; // ??? WRONG 
 	// int pagesize = getpagesize(); // are we using this ?
@@ -615,7 +615,7 @@ OStreamMmap::OStreamMmap(){
 		
 
 }
-OStreamMmap::OStreamMmap(int buffer_size){
+OStreamMmap::OStreamMmap(ulong buffer_size){
 	// we are assuming that the buffersize is a multiple of pagesize and pagesize is a multiple of integer size  
 	buf = (int *) -1 ; // initlize using some invalid memory location .. will be assigned memory by mmap 
 	b_size = buffer_size ; 
