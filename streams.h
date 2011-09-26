@@ -21,6 +21,7 @@ class BaseIStream {
 	virtual int opens(std::string & filename, ulong offset) = 0 ; // offset is usually the size of M  
 	virtual bool end_of_stream() = 0 ;
 	virtual int closes() = 0;
+	
 
 	// virtual destructor is a good practice for all base classes
 	virtual ~BaseIStream() {}  // inline empty definition  
@@ -33,7 +34,8 @@ class BaseOStream {
 	// we can have constructors for ABC if we have data types  
 	virtual int create(std::string &filename ) = 0;
 	virtual int writes(int number) = 0;
-	virtual int closes() = 0; // closes the file and detaches stream
+	virtual int closes() = 0; // closes the file and detaches streami
+	virtual std::string getFilename();
 	// virtual destructor is a good practice for all base classes
 	virtual ~BaseOStream()  {} 
 
@@ -52,7 +54,11 @@ class IStreamRead :public BaseIStream{
 		virtual int opens(std::string & filename,ulong offset)  ; //  assign value to fd 
 		virtual int read_next() ; // will return the next int 
 		virtual bool end_of_stream()  ;
+		std::string getFilename(){   // function virtual in base class automatically becomes virtual in child / derived class
+			return filename ;
+		}	
 		virtual int closes();
+		
 	// we dont need to have a virtual destructor (default will do) here as the base class destructor which is virtual will be called automatically
 		// destructor can closes the file  
 		virtual ~IStreamRead();	
@@ -91,6 +97,9 @@ class IStreamReadBuf :public BaseIStream{
 		virtual int read_next() ; // will return the next int and will implement buffering
 		virtual bool end_of_stream() ;
 		virtual int closes();
+		std::string getFilename(){   // function virtual in base class automatically becomes virtual in child / derived class
+			return filename ;
+		}
 		virtual ~IStreamReadBuf() ;  
 		// destructor reqd but should it be virtual ?? stack overflow ??  
 };
@@ -135,6 +144,9 @@ class IStreamFRead : public BaseIStream{
 		virtual int opens(std::string & filename,ulong offset)  ; //  assign value to fd 
 		virtual int  read_next() ; // will return the next int 
 		virtual bool end_of_stream()  ;
+		std::string getFilename(){   // function virtual in base class automatically becomes virtual in child / derived class
+			return filename ;
+		}
 		virtual int closes();
 		// DEFINE DESTRUCTOR !!!!
 		~IStreamFRead();
@@ -184,6 +196,9 @@ class IStreamMmap : public BaseIStream{
 		virtual int opens(std::string & filename)  ; //  assign value to fd 
 		virtual int opens(std::string & filename, ulong offset)  ; //  assign value to fd 
 		virtual bool end_of_stream() ;
+		std::string getFilename(){   // function virtual in base class automatically becomes virtual in child / derived class
+			return filename ;
+		}
 		virtual int closes();
 		~IStreamMmap() ; // this does not have to be virtual 
 
