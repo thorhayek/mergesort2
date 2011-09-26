@@ -47,14 +47,16 @@ int main(int argc, char *argv[]) {
 	}
 
 	// NOW write read these streams one at a time and store them in an array 
-	int temp ;
+	int temp = -1 ;
 
 	for(int i = 0; i < N/M ; i++){ // loop thru all the streams 
 			 // temp_array
 			 int *temp_array = new int[M/sizeof(int)] ;
 			 //read M elements 
 			 for(int j=0; j< (M/sizeof(int)) ;j++ ){
-					temp = rb_vector[i].read_next() ;
+					if(!rb_vector[i].end_of_stream()) {
+				 		temp = rb_vector[i].read_next();
+					}
 					if(temp == -1 || temp == -2 ){
 					    cout << "read next failed or you generated random number"<<endl ;
 						return 1 ; // main return 
@@ -71,7 +73,7 @@ int main(int argc, char *argv[]) {
 			 OStreamWriteBuf wb(1024) ; // CHANGE THE BUFFER SIZE TO OPTIMAL
 			 wb.create(filename);
 			 // ELEMENTS SHOULD BE WRITTEN IN DESCENDING ORDER 
-			 //for(int j=0 ; j < (M/sizeof(int)) ; j++){
+			 //for(int j=0 ; j < (M/sizeof(int)) ; j++)
 			 for(int j=(M/sizeof(int) - 1 ) ; j >= 0 ; j--){
 						wb.writes(temp_array[j]);		
 			 }
@@ -175,10 +177,12 @@ int d_way_merge(vector<IStreamReadBuf *> &infiles,int d,OStreamWriteBuf & outfil
 			cout << "before this " << endl ;
 			string filename = infiles[j]->getFilename() ; 
 			cout << "after this with filename "<< filename  << endl ;
-			int number = infiles[j]->read_next() ;
-			cout << "after this 2 " << endl ;
-			Item a(number,filename);
-			heap.insert(a) ;
+			if(!infiles[j]->end_of_stream()) {
+				int number = infiles[j]->read_next() ;
+				cout << "after this 2 " << endl ;
+				Item a(number,filename);
+				heap.insert(a) ;
+			}
 			//cout << "read and inserted number " << number << endl ; 
 		}
 		
@@ -213,12 +217,13 @@ int d_way_merge(vector<IStreamReadBuf *> &infiles,int d,OStreamWriteBuf & outfil
 			}	
 			// read element from the file that got removed from heap  
 			//int number ;
-			int number = infiles[file_index]->read_next();
-			Item a(number,filename);
-			// now add this number to heap i
-			cout <<"adding  number to the heap = "<< number <<"got this number from file  " << filename << endl ;
-			heap.insert(a);
-
+			if(!infiles[file_index]->end_of_stream()) {
+				int number = infiles[file_index]->read_next();
+				Item a(number,filename);
+				// now add this number to heap i
+				cout <<"adding  number to the heap = "<< number <<"got this number from file  " << filename << endl ;
+				heap.insert(a);
+			}
 			// Always check for eof after READ !!! IMP 
 			
 	}
