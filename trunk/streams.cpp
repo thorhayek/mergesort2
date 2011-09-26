@@ -13,7 +13,8 @@ using namespace std;
 int IStreamRead::opens(std::string & filename){
 
 	// connect the IStream_one obj with a file 
-	read_fd = open(filename.c_str(),O_RDONLY ) ;  
+	read_fd = open(filename.c_str(),O_RDONLY ) ; 
+	this->filename = filename ;
 	if(read_fd < 0 ){
 		 return -1 ;  
 	}
@@ -24,6 +25,7 @@ int IStreamRead::opens(std::string & filename){
 int IStreamRead::opens(std::string & filename,int offset){
 		
 	read_fd = open(filename.c_str(),O_RDONLY ) ;  
+	this->filename = filename ;
 	if(read_fd < 0 ){
 		 return -1 ;  
 	}
@@ -135,6 +137,7 @@ IStreamReadBuf::IStreamReadBuf(const IStreamReadBuf &b){
 int IStreamReadBuf::opens(std::string & filename){
 	// connect the IStream_one obj with a file 
 	read_fd = open(filename.c_str(),O_RDONLY ) ;  
+	this->filename = filename ;
 	if(read_fd < 0 ){
 		 return -1 ;  
 	}
@@ -148,6 +151,7 @@ int IStreamReadBuf::opens(std::string & filename){
 int IStreamReadBuf::opens(std::string & filename,int offset){
 	// connect the IStream_one obj with a file 
 	read_fd = open(filename.c_str(),O_RDONLY ) ;  
+	this->filename = filename ;
 	if(read_fd < 0 ){
 		 return -1 ;  
 	}
@@ -320,6 +324,7 @@ IStreamFRead::IStreamFRead(const IStreamFRead& b){
 int IStreamFRead::opens(std::string & filename){
 	
 	read_ptr = fopen(filename.c_str(),"rb");
+	this->filename = filename ;
 	if(read_ptr == NULL){
 		return -1 ;
 	}
@@ -329,6 +334,7 @@ int IStreamFRead::opens(std::string & filename){
 int IStreamFRead::opens(std::string & filename,int offset){
 	
 	read_ptr = fopen(filename.c_str(),"rb");
+	this->filename = filename ;
 	if(read_ptr == NULL){
 		return -1 ;
 	}
@@ -462,6 +468,7 @@ IStreamMmap::IStreamMmap(int buffer_size){
 	file_end_flag = false ;  
 	//pagesize = getpagesize();
 	offset = (-1)*b_size;
+	//start_offset = 0 ;
 
 }
 
@@ -472,6 +479,7 @@ IStreamMmap::IStreamMmap(const IStreamMmap &b){
 		file_end_flag = b.file_end_flag ;
 		offset = b.offset ;
 		filelength = b.filelength ;
+		//start_offset = b.start_offset ; 
 		// ensure that there is no shallow copy of the buf
 		buf = (int *)-1; // initiliazing to some useless memory address 
 
@@ -482,6 +490,7 @@ int IStreamMmap::opens(std::string & filename){
 	// int pagesize = getpagesize(); // are we using this ?
 	// connect the IStream_one obj with a file 
 	read_fd = open(filename.c_str(),O_RDONLY ) ;  
+	this->filename = filename ;
 	if(read_fd < 0 ){
 		 return -1 ;  
 	}
@@ -500,6 +509,7 @@ int IStreamMmap::opens(std::string & filename,int offset){
 	// int pagesize = getpagesize(); // are we using this ?
 	// connect the IStream_one obj with a file 
 	read_fd = open(filename.c_str(),O_RDONLY ) ;  
+	this->filename = filename ;
 	if(read_fd < 0 ){
 		 return -1 ;  
 	}
@@ -509,12 +519,13 @@ int IStreamMmap::opens(std::string & filename,int offset){
 	filelength = sbuf.st_size; 
 
 	// CHECK  IF THIS WILL CAUSE PROBLEM WITH MMAP TODO
-	int ret_code = lseek(read_fd,offset,SEEK_SET);
+	/*int ret_code = lseek(read_fd,offset,SEEK_SET);
 	if(ret_code == -1){
 		return ret_code ;
-	}
+	}*/
+	// SET THE START OFFSET 
+	this->offset = offset - b_size ;
 	return 0 ;// on success 
-	// handle error 	
 
 }
 int IStreamMmap::read_next(){
