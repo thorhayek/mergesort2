@@ -39,7 +39,10 @@ class PQ{
 						 pq = new Item[maxN+1]; 
 						 N = 0; // array starts from 1 . 
 					}
-										int empty() const{
+					int getN(){
+							return N;
+					}	
+					int empty() const{
 							return N == 0; }
 				 	void insert(Item item){
 							 	pq[++N] = item;  fixUp(pq, N); }
