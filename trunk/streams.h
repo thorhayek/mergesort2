@@ -42,7 +42,8 @@ class BaseOStream {
 class IStreamRead :public BaseIStream{
 	
 	private :
-		int  read_fd ; // the read fd  
+		int  read_fd ; // the read fd
+		std::string filename ;
 		//int  buf ;  // the one int that is read 
 	public : 
 		// default constructor
@@ -79,6 +80,7 @@ class IStreamReadBuf :public BaseIStream{
 		bool file_end_flag ; 
 		int total_reads;
 		int filelength;
+		std::string filename ;
 	public :
 		// default constructor 
 		IStreamReadBuf(); // creates buffer of size 1 
@@ -120,6 +122,7 @@ class IStreamFRead : public BaseIStream{
 		// size of buffer 
 		int b_size ;
 		int elements_read ; 
+		std::string filename ;
  	
 			
 	public 	:	
@@ -169,6 +172,7 @@ class IStreamMmap : public BaseIStream{
 		int offset;	//Current offset from which to start reading from file. It is aligned with virtual page size
 		//int pagesize; //page size of the operating system  reqd ?? 
 		int filelength; //length of the file being opened
+		std::string filename ;
 
 	public :
 		// default constructor 
