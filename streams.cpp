@@ -113,8 +113,8 @@ IStreamReadBuf::IStreamReadBuf(){
 
 } 
 IStreamReadBuf::IStreamReadBuf(int buffer_size){
-	buf = new int[buffer_size] ; 
-	b_size = buffer_size ;  
+	buf = new int[buffer_size/sizeof(int)] ; 
+	b_size = buffer_size/sizeof(int);  
 	// initialize the elements read to 
 	elements_read = b_size ; // ensures that firt time we use read call
 	file_end_flag = false ;  
@@ -240,8 +240,8 @@ OStreamWriteBuf::OStreamWriteBuf(){
 
 }
 OStreamWriteBuf::OStreamWriteBuf(int buffer_size){
-	buf = new int[buffer_size];
-	b_size = buffer_size ; 
+	buf = new int[buffer_size/sizeof(int)];
+	b_size = buffer_size/sizeof(int); 
 	elements_written = 0 ; 
 
 }
@@ -308,9 +308,14 @@ IStreamFRead::IStreamFRead(){
 	elements_read = b_size ;
 }
 IStreamFRead::IStreamFRead(int buffer_size){
-	buf = new int[buffer_size];
-	b_size = buffer_size ; 
+	buf = new int[buffer_size/sizeof(int)];
+	b_size = buffer_size/sizeof(int); 
 	elements_read = b_size ; 
+}
+IStreamFRead::IStreamFRead(const IStreamFRead& b){
+	b_size = b.b_size;
+	elements_read = b.elements_read;
+	buf = new int[b_size];
 }
 int IStreamFRead::opens(std::string & filename){
 	
@@ -392,10 +397,14 @@ OStreamFWrite::OStreamFWrite(){
 
 }
 OStreamFWrite::OStreamFWrite(int buffer_size){
-	buf = new int[buffer_size] ;
-	b_size = buffer_size ; 
+	b_size = buffer_size/sizeof(int); 
+	buf = new int[buffer_size/sizeof(int)];
 	elements_written = 0 ; 
-
+}
+OStreamFWrite::OStreamFWrite(const OStreamFWrite& b){
+	b_size = b.b_size;
+	elements_written = b.elements_written; 
+	buf = new int[b_size];
 }
 int OStreamFWrite::create(std::string & filename){
 	write_ptr = fopen(filename.c_str(),"wb");
@@ -417,8 +426,6 @@ int OStreamFWrite::writes(int element){
 		elements_written = 0 ;
 	}
 	return 0 ;
-		
-	
 }
 int OStreamFWrite::closes(){
 	
@@ -641,9 +648,9 @@ int OStreamMmap::writes(int element){
 			// error while lseeking 
 			return -1 ; 
 		}
-		struct stat sbuf;
-		stat("one.bin", &sbuf);
-		cout << "one.bin size="<<sbuf.st_size<<endl;
+		//struct stat sbuf;
+		//stat("one.bin", &sbuf);
+		//cout << "one.bin size="<<sbuf.st_size<<endl;
 		buf = (int *)mmap(0, b_size, PROT_WRITE, MAP_SHARED, write_fd, offset);// should we use MAP_PRIVATE instead
 		if(buf == (int *)-1){ // should be int* instead of char * or void * 
 			return -1 ;

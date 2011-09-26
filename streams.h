@@ -127,6 +127,7 @@ class IStreamFRead : public BaseIStream{
 		IStreamFRead();
 		// other constructors 
 		IStreamFRead(int buffer_size);
+		IStreamFRead(const IStreamFRead& b);
 		virtual int opens(std::string & filename)  ; //  assign value to fd 
 		virtual int opens(std::string & filename,int offset)  ; //  assign value to fd 
 		virtual int  read_next() ; // will return the next int 
@@ -149,6 +150,7 @@ class OStreamFWrite : public BaseOStream{
 		// constructors 
 	 	OStreamFWrite();
 		OStreamFWrite(int buffer_size);
+		OStreamFWrite(const OStreamFWrite& b);
 		virtual int create(std::string & filename);
 		virtual int writes(int n);
 		virtual int closes();
