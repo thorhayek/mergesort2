@@ -15,7 +15,7 @@ int main(int argc, char *argv[]) {
 
 	int pagesize = getpagesize();
 	const int N =  40*pagesize ; // N ==  10*4096
-	const int M =  2*pagesize  ;   // M =  2 * 4096
+	const int M =  2*pagesize  ;   // M =  2 * 4096  // M HAS TO BE divisible by size of int 
 	// N/M  = 20 ;  
 	const int d =  5 ;   // 5 ways merge at a time 
 	
@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
 				 	temp_array[j] = temp ;
 			 }
 			 // sort this array using quick sort 
-			 qsort(temp_array,M/sizeof(int),sizeof(int),compare);
+			 qsort(temp_array,(M/sizeof(int)),sizeof(int),compare);
 			 // now write these M / sizeof(int) elements to a file
 
 			 string filename = make_file_name(i) ;
@@ -66,7 +66,9 @@ int main(int argc, char *argv[]) {
 			 cout << "creating filename " << filename << endl ;
 			 OStreamWriteBuf wb(1024) ; // CHANGE THE BUFFER SIZE TO OPTIMAL
 			 wb.create(filename);
-			 for(int j=0 ; j < (M/sizeof(int)) ; j++){
+			 // ELEMENTS SHOULD BE WRITTEN IN DESCENDING ORDER 
+			 //for(int j=0 ; j < (M/sizeof(int)) ; j++){
+			 for(int j=(M/sizeof(int) - 1 ) ; j >= 0 ; j--){
 						wb.writes(temp_array[j]);		
 			 }
 			 wb.closes();
@@ -82,8 +84,7 @@ int main(int argc, char *argv[]) {
 	}	
 	// NOW Open these streams for reading use queue STL to store the istream references  
 	queue<IStreamReadBuf *>     rbs_queue;
-	{
-		vector<IStreamReadBuf>  rbs_vector(N/M,buffer_size);
+	vector<IStreamReadBuf>  rbs_vector(N/M,buffer_size);
 		// open the new streams 
 		for(int i =0; i < N/M ; i++){
 			
@@ -92,46 +93,102 @@ int main(int argc, char *argv[]) {
 			 // store references of the streams in the queue  
 			 rbs_queue.push(&(rbs_vector[i]));
 		}
-	}	
 	
 	// PART 3
+	 int vector_size = N/M ;	
+	 int out_index = 0 ;	
 	 // while elements remain pop d elements from the queue then store them in  
 	 while(!q.empty()){
-		             
-		    IStreamReadBuf *temp  = q.front();
-					             //cout << "item at the front == before popping "<<temp << endl ;
-            q.pop();
+			
+		 	// pop d elements 
+		 	IStreamReadBuf **infiles = new IStreamReadBuf*[d]; // vector<IStreamReadBuf *> var(d)
+			
+			for(int i = 0 ; i < d ; i++){
+					infiles[i] = q.front();
+            		q.pop();
+			}
+			OStreamWriteBuf outfile ; // CHANGE BUFFER SIZE TODO
+			out_file_name = make_out_file_name(out_index);
+
+			outfile.create(out_file_name);
+			// d_way_merge starts for these d files 
+			d_way_merge(infiles,d,outfile);
+			// close output file 
+			outfile.close();
+			// open a d merge object and add it to the queue 
+			IStreamReadBuf temp_read ;  // TODO Add Buffer size 
+			temp_read.open(out_file_name);
+			
+			rbs_vector.push_back(temp_read); // index of new object = vector_size + out_index + 1
+			int new_index = vector_size + out_index + 1 ;
+			rbs_queue.push(&(rbs_vector[new_index]));
+			cout << "sanity check temp_object filename == " << temp_read.getFilename() << "is same as vector filename == " << rbs_vector[new_index].getFilename() << endl ;
+			
+
+			out_index += 1 ;
 								             
-   }
+    }
 
 	
-//	for(int i=0;i < 4; i++){
-//			// dynmaic polymorphism at work 
-//			offset = i * 40 ;  // offset = 0  
-//			if(i == 3){
-//				base_istream[i]->opens(s,pagesize);
-//			}
-//			else{
-//				base_istream[i]->opens(s,offset);
-//			}	
-//			//offset += 40 ; 
-//	}	
-//	
-//	// NOW READ 10 elements each 
-//	for(int i = 0 ; i < 4 ; i++){
-// 		 for(int j=0; j < 10 ; j++){
-//				int temp = base_istream[i]->read_next();
-//				cout << "element read = " << temp  << " object number "<< i << endl ;
-//		 }	 	
-//	}
-//
-//	for(int i=0;i < 4; i++){
-//			// dynmaic polymorphism at work 
-//			//offset = i * 40 ;  // offset = 0  
-//			int ret_code = base_istream[i]->closes();
-//			//offset += 40 ; 
-//	}
 }
+
+d_way_merge(BaseIStream *infiles,int d,BaseOStream & outfile){
+
+		// initialize the heap
+	    PQ  heap(d);
+		int streams_open = d ;
+		// write the first d elements 
+		for( j= 0 ; j < d ; j++){
+			int number ;
+			string filename = infiles[j].filename ; 
+			infiles[j].read((char*)&number,4) ;
+			Item a(number,filename);
+			heap.insert(a) ;
+			//cout << "read and inserted number " << number << endl ; 
+		}
+		
+		while(streams_open > 0 ){
+
+
+			Item d = heap.getmax();
+			int n = d.getNumber() ;
+			string s = d.getFile();
+			cout << "deleted number " << n << " from heap from file " << s<<endl ;
+			string filename = s ; // calls a copy constructor i
+			// WRITE THE MAX element to file 
+			int ret_code = outfile.write((char*)&n,4);
+			if(ret_code < 0){
+					cout << "writing to output failed breaking from while loop "<<endl ;
+					break ; 
+			}
+			// split s to find out the corresponding open stream
+			int file_index = get_file_index(s);
+			if(file_index == -1 ){
+					cout << "invalid file index exiting "<< endl ;
+					return -1 ;
+			}			
+			cout << "file index of file we are reading from ==  " << file_index << endl ;
+			if(infiles[file_index].end_of_stream()){
+					streams_open-- ;	
+					infiles[file_index].close();
+					cout << "****File " << filename << "reached eof .closing corresponding stream " << endl ;
+					// WE wont insert here
+					continue ;
+			}	
+			// read element from the file that got removed from heap  
+			int number ;
+			infiles[file_index].read((char*)&number,4);
+			Item a(number,filename);
+			// now add this number to heap i
+			cout <<"adding  number to the heap = "<< number <<"got this number from file  " << filename << endl ;
+			heap.insert(a);
+
+			// Always check for eof after READ !!! IMP 
+			
+	}
+
+
+}	
 std::string  make_file_name(int i){
 
 		std::string filename("");
@@ -146,7 +203,37 @@ std::string  make_file_name(int i){
 		return filename ;
 
 }
+std::string  make_out_file_name(int i){
 
+		std::string filename("");
+		std::ostringstream sin ;
+		const std::string prefix = "m_files/d_merged_" ;
+		const std::string suffix = ".bin";
+		sin << i ;
+    	filename.append(prefix);
+    	filename.append(sin.str());
+    	filename.append(suffix);
+		sin.str("");
+		return filename ;
+
+}
+int get_file_index(std::string &s){
+
+			size_t index = s.find(".");
+			if(index == std::string::npos){
+				std::cout << " dot character not found wtf " << std::endl ;
+					return -1 ;
+			}
+			
+			//cout << "index of dot character "<< index <<endl ;
+			s.erase(index);
+			index = s.find("_") + 1 ;
+			s.erase(0,index);
+			//cout << " string after erase " << s << endl ;
+			int file_index = atoi(s.c_str())	;
+			return file_index ;
+
+}
 int compare (const void * a, const void * b)
 {
 	  return ( *(int*)a - *(int*)b );
