@@ -6,7 +6,8 @@
 #include<sstream>
 #include<cstdlib>
 #include<queue>
-#include<fstream> // FOR READING sorted file because i am lazy 
+#include<fstream> // FOR READING sorted file because i am lazy
+#include<time.h>
 
 int get_file_index(std::string &s);
 std::string make_file_name(int i);
