@@ -47,16 +47,14 @@ int main(int argc, char *argv[]) {
 	}
 
 	// NOW write read these streams one at a time and store them in an array 
-	int temp = -1 ;
+	int temp ;
 
 	for(int i = 0; i < N/M ; i++){ // loop thru all the streams 
 			 // temp_array
 			 int *temp_array = new int[M/sizeof(int)] ;
 			 //read M elements 
 			 for(int j=0; j< (M/sizeof(int)) ;j++ ){
-					if(!rb_vector[i].end_of_stream()) {
-				 		temp = rb_vector[i].read_next();
-					}
+					temp = rb_vector[i].read_next() ;
 					if(temp == -1 || temp == -2 ){
 					    cout << "read next failed or you generated random number"<<endl ;
 						return 1 ; // main return 
@@ -73,7 +71,6 @@ int main(int argc, char *argv[]) {
 			 OStreamWriteBuf wb(1024) ; // CHANGE THE BUFFER SIZE TO OPTIMAL
 			 wb.create(filename);
 			 // ELEMENTS SHOULD BE WRITTEN IN DESCENDING ORDER 
-			 //for(int j=0 ; j < (M/sizeof(int)) ; j++)
 			 for(int j=(M/sizeof(int) - 1 ) ; j >= 0 ; j--){
 						wb.writes(temp_array[j]);		
 			 }
@@ -87,7 +84,6 @@ int main(int argc, char *argv[]) {
 	// close the open streams 
 	for(int i = 0; i < N/M ; i++){
 			rb_vector[i].closes();
-			
 	}	
 	// NOW Open these streams for reading use queue STL to store the istream references  
 	queue<IStreamReadBuf *>     rbs_queue;
@@ -142,11 +138,11 @@ int main(int argc, char *argv[]) {
 					cout << "ret code for opens = " << ret_code <<" breaking for while loop " << endl ;
 					break ;
 			}	
-			rbs_vector.push_back(temp_read); // index of new object = vector_size + out_index + 1
-			int new_index = vector_size + out_index  ;
-			cout << "new index =  "<< new_index <<endl ;
-			rbs_queue.push(&(rbs_vector[new_index]));
-			cout << "sanity check temp_object filename == " << temp_read.getFilename() << "is same as vector filename == " << rbs_vector[new_index].getFilename() << endl ;
+			//rbs_vector.push_back(temp_read); // index of new object = vector_size + out_index + 1
+			//int new_index = vector_size + out_index  ;
+			//cout << "new index =  "<< new_index <<endl ;
+			//rbs_queue.push(&(rbs_vector[new_index]));
+			//cout << "sanity check temp_object filename == " << temp_read.getFilename() << "is same as vector filename == " << rbs_vector[new_index].getFilename() << endl ;
 			
 
 			out_index += 1 ;
@@ -177,12 +173,10 @@ int d_way_merge(vector<IStreamReadBuf *> &infiles,int d,OStreamWriteBuf & outfil
 			cout << "before this " << endl ;
 			string filename = infiles[j]->getFilename() ; 
 			cout << "after this with filename "<< filename  << endl ;
-			if(!infiles[j]->end_of_stream()) {
-				int number = infiles[j]->read_next() ;
-				cout << "after this 2 " << endl ;
-				Item a(number,filename);
-				heap.insert(a) ;
-			}
+			int number = infiles[j]->read_next() ;
+			cout << "after this 2 " << endl ;
+			Item a(number,filename);
+			heap.insert(a) ;
 			//cout << "read and inserted number " << number << endl ; 
 		}
 		
@@ -217,13 +211,12 @@ int d_way_merge(vector<IStreamReadBuf *> &infiles,int d,OStreamWriteBuf & outfil
 			}	
 			// read element from the file that got removed from heap  
 			//int number ;
-			if(!infiles[file_index]->end_of_stream()) {
-				int number = infiles[file_index]->read_next();
-				Item a(number,filename);
-				// now add this number to heap i
-				cout <<"adding  number to the heap = "<< number <<"got this number from file  " << filename << endl ;
-				heap.insert(a);
-			}
+			int number = infiles[file_index]->read_next();
+			Item a(number,filename);
+			// now add this number to heap i
+			cout <<"adding  number to the heap = "<< number <<"got this number from file  " << filename << endl ;
+			heap.insert(a);
+
 			// Always check for eof after READ !!! IMP 
 			
 	}
