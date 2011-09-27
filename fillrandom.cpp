@@ -16,7 +16,7 @@ int main(int argc, char *argv[]) {
 	ulong num_elements = atol(argv[1]);
 	string sname = argv[2];
 	vector<OStreamWrite> sw(1,OStreamWrite());
-	vector<IStreamRead> ss(1,IStreamRead());
+	//vector<IStreamRead> ss(1,IStreamRead());
 
 	srand(time(NULL));
 
@@ -30,11 +30,11 @@ int main(int argc, char *argv[]) {
 
 	sw[0].closes();
 
-	ss[0].opens(sname);
-	while(!ss[0].end_of_stream()) {
-		cout<<ss[0].read_next()<<" ";
-	}
-	ss[0].closes();
+	//ss[0].opens(sname);
+	//while(!ss[0].end_of_stream()) {
+	//	cout<<ss[0].read_next()<<" ";
+	//}
+	//ss[0].closes();
 
 	return 0;
 }
