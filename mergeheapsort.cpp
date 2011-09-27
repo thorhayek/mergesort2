@@ -8,7 +8,53 @@
 
 using namespace std;
 
+
+// HEAP SORT 
+void siftDown(int numbers[], int root, int bottom)
+{
+	  int done, maxChild, temp;
+
+	    done = 0;
+		  while ((root*2 <= bottom) && (!done))
+	    {
+		    if (root*2 == bottom)
+			      maxChild = root * 2;
+		    else if (numbers[root * 2] > numbers[root * 2 + 1])
+			      maxChild = root * 2;
+		    else
+	      		maxChild = root * 2 + 1;
+	   		 if (numbers[root] < numbers[maxChild])
+	   		 {
+		     	 temp = numbers[root];
+	        	numbers[root] = numbers[maxChild];
+		      	numbers[maxChild] = temp;
+	        	root = maxChild;
+	    	}
+	    	else
+	      		done = 1;
+	  }
+}
+
+void heapSort(int numbers[], int array_size)
+{
+	 int i, temp;
+	 for (i = (array_size / 2)-1; i >= 0; i--)
+		    siftDown(numbers, i, array_size);
+
+	  for (i = array_size-1; i >= 1; i--)
+	  {
+		temp = numbers[0];
+			numbers[0] = numbers[i];
+				numbers[i] = temp;
+					siftDown(numbers, 0, i-1);
+	  }
+}
+
+
+//MERGE SORT 
+
 int *a,*b;
+
 void merge(int,int,int);
 void merge_sort(int low,int high)
 {
@@ -61,13 +107,14 @@ void merge(int low,int mid,int high)
 
 int main(int argc, char *argv[]) {
 	
-	if(argc != 3) {
-		cout<<"Need 2 arguments: num_elements filename"<<endl;
+	if(argc != 4) {
+		cout<<"Need 3 arguments: num_elements filename sort_type(1=merge 0=heap)"<<endl;
 		return -1;
 	}
 
 	ulong num_elements = atol(argv[1]);
 	string sname=argv[2];
+	int  merge_true = atoi(argv[3]);
 
 	a = new int [num_elements];
 	b = new int [num_elements];
@@ -87,25 +134,32 @@ int main(int argc, char *argv[]) {
 		return -1;
 	}
 	
-	merge_sort(0,num_elements-1);
+	if(merge_true){
+		merge_sort(0,num_elements-1);
 
-	//for(i=0; i<num_elements; i++) {
-	//	std::cout<<a[i]<<" ";
-	//}
-
-	sname.append(".out");
-	if(sw[0].create(sname)== -1) {
-		cout<<"Could not create file for writing"<<endl;
-		return -1;
+		//for(i=0; i<num_elements; i++) {
+		//	std::cout<<a[i]<<" ";
 	}
+	else{//heapsort 
+
+  			heapSort(a,num_elements); // inplace sort 
+
+	}	
+			
+
+		sname.append(".out");
+		if(sw[0].create(sname)== -1) {
+			cout<<"Could not create file for writing"<<endl;
+			return -1;
+		}
 	
-	for(i=0; i<num_elements; i++) {
-		sw[0].writes(a[i]);
-	}
-	sw[0].closes();
+		for(i=0; i<num_elements; i++) {
+			sw[0].writes(a[i]);
+		}
+		sw[0].closes();
 
-	delete[] a;
-	delete[] b;
+		delete[] a;
+		delete[] b;
 
 	return 0;
 }
