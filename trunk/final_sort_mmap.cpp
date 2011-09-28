@@ -16,7 +16,7 @@ std::string make_out_file_name(int i);
 int d_way_merge(std::vector<IStreamMmap> &rbs_vector,std::vector<int> &infiles,int d ,OStreamMmap &outfiles);
 int compare (const void * a, const void * b);
 
-
+const bool DEBUG= false ;
 #define HIGH  99999 ;
 using namespace std ;
 int main(int argc, char *argv[]) {
@@ -32,12 +32,20 @@ int main(int argc, char *argv[]) {
 	   integer.
 	   */
 	srand((unsigned int) seconds);
-
+	if(argc != 5){
+		cout  << "please enter the n , m ,d,b " << endl ;
+		return 1; 
+	}	
 	int pagesize = getpagesize() ;
 	// USER INPUT IS MULTIPLE OF PAGE SIZE 
 	int  n  = atoi(argv[1]);
 	int  m  = atoi(argv[2]);
 	const int d = atoi(argv[3]);
+    if((n/m) < d) {
+		cout <<"the n/m values is less than d exiting "<< endl ;
+		return 1;	
+	}	
+	const int B = atoi(argv[4]) ; // does not have to be a multiple of pagesize
 	const ulong N = n * pagesize ;
 	const ulong M = m * pagesize ;
 	//const int N =  40*pagesize ; // N ==  10*4096 ints 
@@ -47,7 +55,7 @@ int main(int argc, char *argv[]) {
 	
 	int offset = 0; 
 	// create master file 
-	OStreamMmap writebuf_stream(1024); // buffer size = optimum  
+	OStreamMmap writebuf_stream(B); // buffer size = optimum  
 	string s = "m_files/master.bin";
 	writebuf_stream.create(s);
 	for(ulong i=0; i < N/4 ; i++) // 10*pagesize elements written ==> size of file = N  
@@ -59,9 +67,9 @@ int main(int argc, char *argv[]) {
 	}
 	writebuf_stream.closes();
 	// START READING THE LARGE FILE and divide it into N/M streams 
-	int buffer_size = pagesize ;
+	//int buffer_size = B ;
 	// we have to make N/M streams use a vector 
-	vector<IStreamMmap>  rb_vector(N/M,buffer_size);
+	vector<IStreamMmap>  rb_vector(N/M,B);
 	// now loop thru this vector and opens master.bin at different offsets 
 	for(int i=0 ; i < N/M ; i++){
 			rb_vector[i].opens(s,offset);
@@ -88,7 +96,7 @@ int main(int argc, char *argv[]) {
 			 string filename = make_file_name(i) ;
 			 // open file 
 			 //cout << "creating filename " << filename << endl ;
-			 OStreamMmap wb(1024) ; // CHANGE THE BUFFER SIZE TO OPTIMAL
+			 OStreamMmap wb(B) ; // CHANGE THE BUFFER SIZE TO OPTIMAL
 			 wb.create(filename);
 			 // ELEMENTS SHOULD BE WRITTEN IN DESCENDING ORDER 
 			 for(int j=(M/sizeof(int) - 1 ) ; j >= 0 ; j--){
@@ -106,7 +114,7 @@ int main(int argc, char *argv[]) {
 	// NOW Open these streams for reading use queue STL to store the istream references  
 	//queue<IStreamReadBuf *>     rbs_queue;
 	queue<int>     rbs_queue;
-	vector<IStreamMmap>  rbs_vector(N/M,buffer_size);
+	vector<IStreamMmap>  rbs_vector(N/M,B);
 		// open the new streams 
 		for(int i =0; i < N/M ; i++){
 			
@@ -129,7 +137,6 @@ int main(int argc, char *argv[]) {
 	 while(rbs_queue.size() != 1){
 			
 		 	// pop d elements 
-		 	cout << "reached top " << endl ;
 			elements_popped = 0 ;		
 			for(int i = 0 ; i < d ; i++){
 					if( !rbs_queue.empty() ){
@@ -141,13 +148,26 @@ int main(int argc, char *argv[]) {
 						break ;
 					}	
 			}
-			OStreamMmap outfile(1024) ; // CHANGE BUFFER SIZE TODO
+			OStreamMmap outfile(B) ; // CHANGE BUFFER SIZE TODO
 			new_index = vector_size + out_index ;
 			std::string out_file_name = make_out_file_name(new_index);
 			last_file_name = out_file_name ;
 			outfile.create(out_file_name);
 			// d_way_merge starts for these d files 
 			int d_ret = d_way_merge(rbs_vector,infiles,elements_popped,outfile);
+			// DELETE THE MERGED FILES 
+			for(int i=0;i<elements_popped;i++ ){
+	 				std::string rm_cmd = "rm ";
+					string filename = rbs_vector[infiles[i]].getFilename();
+					//int ret = rbs_vector[infiles[i]].closes() ;
+					rm_cmd.append(filename);
+					//cout << " deleting merged file =="<< filename << endl ;
+					int ret = system(rm_cmd.c_str());
+					if(ret != 0){
+						cout << "could not delete the merged file number"<<infiles[i] <<endl ;
+					}	
+					
+			}	
 			//cout <<"ret_code for d_way_merge "<< d_ret << endl ;
 			// close output file 
 			int ret_code = outfile.closes();
@@ -156,7 +176,7 @@ int main(int argc, char *argv[]) {
 					break ;
 			}
 			// open a d merge object and add it to the queue 
-			IStreamMmap temp_read(1024) ;  // TODO Add Buffer size
+			IStreamMmap temp_read(B) ;  // TODO Add Buffer size
 			ret_code = temp_read.opens(out_file_name);
 			//cout << "opened file name " << out_file_name ;
 			if(ret_code < 0){
@@ -185,8 +205,9 @@ int main(int argc, char *argv[]) {
     }
 	// read the last file 
 	//outfile.close();
-	// READ THE OUTPUT FILE 
-	ifstream read_out ;
+	// READ THE OUTPUT FILE
+////////// ******* READING BACK OUR OUTPUT 	 
+ifstream read_out ;
     read_out.open(last_file_name.c_str(),ios::binary);
     if(read_out.fail()){
 		       cout << "open failed " << endl ;
@@ -204,7 +225,7 @@ int main(int argc, char *argv[]) {
   read_out.close();
 
 
-	
+	cout << "PROGRAM EXECUTED SUCCCESSFULLY " << endl ;	
 }
 
 int d_way_merge(vector<IStreamMmap> &rbs_vector,vector<int> &infiles,int d,OStreamMmap & outfile){
@@ -249,8 +270,9 @@ int d_way_merge(vector<IStreamMmap> &rbs_vector,vector<int> &infiles,int d,OStre
 			if(rbs_vector[file_index].end_of_stream()){
 					streams_open-- ;	
 					ret_code = rbs_vector[file_index].closes();
-					
+					if(DEBUG){	
 					cout << "****File " << filename << "reached eof closing corresponding stream " << endl ;
+					}
 					// WE wont insert here
 					continue ;
 			}
