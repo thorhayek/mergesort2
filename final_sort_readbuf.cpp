@@ -41,6 +41,10 @@ int main(int argc, char *argv[]) {
 	int  n  = atoi(argv[1]);
 	int  m  = atoi(argv[2]);
 	const int d = atoi(argv[3]);
+    if((n/m) < d) {
+		cout <<"the n/m values is less than d exiting "<< endl ;
+		return 1;	
+	}	
 	const int B = atoi(argv[4]) ; // does not have to be a multiple of pagesize
 	const ulong N = n * pagesize ;
 	const ulong M = m * pagesize ;
