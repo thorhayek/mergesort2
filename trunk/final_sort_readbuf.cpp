@@ -155,15 +155,19 @@ int main(int argc, char *argv[]) {
 			outfile.create(out_file_name);
 			// d_way_merge starts for these d files 
 			int d_ret = d_way_merge(rbs_vector,infiles,elements_popped,outfile);
-			// CLOSE THE MERGED FILES 
-			/*for(int i=0;i<elements_popped;i++ ){
-
-					int ret = rbs_vector[infiles[i]].closes() ;
-					if(ret < 0){
-						cout << "could not close the merged file number"<<infiles[i] <<endl ;
+			// DELETE THE MERGED FILES 
+			for(int i=0;i<elements_popped;i++ ){
+	 				std::string rm_cmd = "rm ";
+					string filename = rbs_vector[infiles[i]].getFilename();
+					//int ret = rbs_vector[infiles[i]].closes() ;
+					rm_cmd.append(filename);
+					//cout << " deleting merged file =="<< filename << endl ;
+					int ret = system(rm_cmd.c_str());
+					if(ret != 0){
+						cout << "could not delete the merged file number"<<infiles[i] <<endl ;
 					}	
 					
-			}*/	
+			}	
 			//cout <<"ret_code for d_way_merge "<< d_ret << endl ;
 			// close output file 
 			int ret_code = outfile.closes();
@@ -203,7 +207,7 @@ int main(int argc, char *argv[]) {
 	//outfile.close();
 	// READ THE OUTPUT FILE
 ////////// ******* READING BACK OUR OUTPUT 	 
-/* ifstream read_out ;
+/*ifstream read_out ;
     read_out.open(last_file_name.c_str(),ios::binary);
     if(read_out.fail()){
 		       cout << "open failed " << endl ;
