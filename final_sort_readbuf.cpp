@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
 		cout  << "please enter the n , m ,d,b " << endl ;
 		return 1; 
 	}	
-	int pagesize = getpagesize() ;
+	ulong pagesize = getpagesize() ;
 	// USER INPUT IS MULTIPLE OF PAGE SIZE 
 	int  n  = atoi(argv[1]);
 	int  m  = atoi(argv[2]);
@@ -49,19 +49,20 @@ int main(int argc, char *argv[]) {
 		}
 	}	
 	const int B = atoi(argv[4]) ; // does not have to be a multiple of pagesize
-	const ulong N = n * pagesize ;
-	const ulong M = m * pagesize ;
+	const ulong N = (ulong)n * (ulong)pagesize ;
+	const ulong M = (ulong)m * (ulong)pagesize ;
 	//const int N =  40*pagesize ; // N ==  10*4096 ints 
 	//const int M =  2*pagesize  ;   // M =  2 * 4096  // M HAS TO BE divisible by size of int 
 	// N/M  = 20 ;  
 	//const int d =  5 ;   // 5 ways merge at a time 
 	
-	int offset = 0; 
+	ulong offset = 0; 
 	// create master file 
 	OStreamWriteBuf writebuf_stream(B); // buffer size = optimum  
 	string s = "m_files/master.bin";
 	writebuf_stream.create(s);
-	for(ulong i=0; i < N/4 ; i++) // 10*pagesize elements written ==> size of file = N  
+	//for(ulong i=0; i < N/4 ; i++) // 10*pagesize elements written ==> size of file = N  
+	for(ulong i=0; i < N ; i++) // 10*pagesize elements written ==> size of file = N  
 	{	
 		int num = rand() % HIGH + 1 ;
 		//writebuf_stream.writes(i);
@@ -74,13 +75,13 @@ int main(int argc, char *argv[]) {
 	// we have to make N/M streams use a vector 
 	vector<IStreamReadBuf>  rb_vector(N/M,B);
 	// now loop thru this vector and opens master.bin at different offsets 
-	for(int i=0 ; i < N/M ; i++){
+	for(ulong i=0 ; i < N/M ; i++){
 			rb_vector[i].opens(s,offset);
 			offset = offset + M ; 
 	}
 	// NOW write read these streams one at a time and store them in an array 
 	int temp ;
-	for(int i = 0; i < N/M ; i++){ // loop thru all the streams 
+	for(ulong i = 0; i < N/M ; i++){ // loop thru all the streams 
 			 // temp_array
 			 int *temp_array = new int[M/sizeof(int)] ;
 			 //read M elements 
