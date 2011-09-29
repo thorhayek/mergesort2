@@ -41,22 +41,18 @@ int main(int argc, char *argv[]) {
 	int  n  = atoi(argv[1]);
 	int  m  = atoi(argv[2]);
 	const int d = atoi(argv[3]);
-    if((n/m) < d) {
+    if(((n*4)/m) < d) {
 		cout <<"the n/m values is less than d trying "<< endl ;
 		if(n/m < 2){
 		cout << "the n/m values is less than or equal to  1.. exiting" <<endl ;
 			return 1;	
 		}
 	}	
-	const int B = atoi(argv[4]) ; // does not have to be a multiple of pagesize
-	const ulong N = n * pagesize ;
-	const ulong M = m * pagesize ;
-	//const int N =  40*pagesize ; // N ==  10*4096 ints 
-	//const int M =  2*pagesize  ;   // M =  2 * 4096  // M HAS TO BE divisible by size of int 
-	// N/M  = 20 ;  
-	//const int d =  5 ;   // 5 ways merge at a time 
+	const int B = atoi(argv[4]) ; 
+	const ulong N = (ulong)n * pagesize ;
+	const ulong M = (ulong)m * pagesize ;
 	
-	int offset = 0; 
+	ulong offset = 0; 
 	// create master file 
 	OStreamWriteBuf writebuf_stream(B); // buffer size = optimum  
 	string s = "m_files/master.bin";
@@ -75,7 +71,7 @@ int main(int argc, char *argv[]) {
 	// we have to make N/M streams use a vector 
 	vector<IStreamReadBuf>  rb_vector(N/M,B);
 	// now loop thru this vector and opens master.bin at different offsets 
-	for(int i=0 ; i < N/M ; i++){
+	for(ulong i=0 ; i < N/M ; i++){
 			rb_vector[i].opens(s,offset);
 			offset = offset + M ; 
 	}
