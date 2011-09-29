@@ -42,8 +42,11 @@ int main(int argc, char *argv[]) {
 	int  m  = atoi(argv[2]);
 	const int d = atoi(argv[3]);
     if((n/m) < d) {
-		cout <<"the n/m values is less than d exiting "<< endl ;
-		return 1;	
+		cout <<"the n/m values is less than d trying "<< endl ;
+		if(n/m < 2){
+		cout << "the n/m values is less than or equal to  1.. exiting" <<endl ;
+			return 1;	
+		}
 	}	
 	const int B = atoi(argv[4]) ; // does not have to be a multiple of pagesize
 	const ulong N = n * pagesize ;
